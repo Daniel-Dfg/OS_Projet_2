@@ -1,0 +1,5 @@
+Création d'une communication entre un client et un serveur, et envoi d'un seul message.
+
+Vérification générique des valeurs de retour des fonctions.
+
+Pour lancer la communication, lancez le makefile et ouvrez ensuite deux terminaux, en exécutant d'abord server dans l'un, puis client dans l'autre.
