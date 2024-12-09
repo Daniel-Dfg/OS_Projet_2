@@ -1,0 +1,32 @@
+Exemple de client et server avec Boost.Asio.
+Un exemple de server et de client qui lisent des messages. Pas d'envoie de message ici.
+
+PARTIE SERVER
+
+Tout commence par la création de boost::asio::io_context, la boucle d’événements qui gère toutes les tâches asynchrones.
+Ensuite, l’instance AsyncServer est initialisée avec ce io_context et le port "1234".
+Le tcp::acceptor lie le serveur à toutes les interfaces locales sur ce port.
+
+La méthode start_accept() est appelée pour commencer à accepter des connexions.
+Un std::shared_ptr<tcp::socket> est créé pour gérer la connexion.
+La méthode acceptor_.async_accept écoute les connexions entrante: dès qu’un client se connecte, une fonction lambda est appelée.
+Si la connexion réussit, start_read(socket) démarre la lecture.
+
+Dans start_read, les données du client sont lues avec boost::asio::async_read_until, qui s’arrête à '\n'.
+Une fois les données reçues, elles sont extraites avec buffer->substr(0, length) et affichées. start_read(socket) est alors réinscrit pour lire d’autres messages.
+Simultanément, start_accept() se réinscrit pour accepter de nouveaux clients.
+
+Enfin, io_context.run() dans le main lance tout le processus, permettant au serveur de gérer les connexions et les messages en continu, sans blocage.
+
+
+
+
+PARTIE CLIENT
+
+(utilisation de fonction lambda était possible ici également)
+
+Le programme commence avec la création de boost::asio::io_context, la boucle d'événements de Boost.Asio.
+Ensuite, une instance de AsyncClient est initialisée avec l'adresse IP du serveur ("127.0.0.1") et le port ("1234").
+Dans le constructeur, le client crée un tcp::endpoint pour se connecter au serveur et appelle socket_.async_connect, une connexion asynchrone.
+Une fois la connexion établie, on_connect est appelé: il affiche un message de confirmation
+et configure une lecture asynchrone avec boost::asio::async_read_until.

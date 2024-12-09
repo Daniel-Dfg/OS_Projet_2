@@ -1,0 +1,38 @@
+Exemple de client et server avec Boost.Asio.
+Un exemple de server et de client qui écrivent des messages. Pas de lecture de message ici.
+Vous pouvez utiliser un asynchrone_Read/client.cpp avec asynchrone_Write/server.cpp et vice-versa
+
+PARTIE SERVER
+
+Tout commence par la création de boost::asio::io_context, la boucle d’événements qui gère toutes les tâches asynchrones.
+Ensuite, l’instance AsyncServer est initialisée avec ce io_context et le port "1234".
+Le tcp::acceptor lie le serveur à toutes les interfaces locales sur ce port.
+
+La méthode start_accept() est appelée pour commencer à accepter des connexions. Un std::shared_ptr<tcp::socket> est créé pour gérer la connexion.
+La méthode acceptor_.async_accept écoute les connexions entrantes : dès qu’un client se connecte, une fonction lambda est appelée.
+Si la connexion réussit, start_write(socket) démarre l'envoi des messages.
+
+Dans start_write, le serveur envoie un message prédéfini au client via boost::asio::async_write.
+Une fois le message envoyé, start_write(socket) est réinscrit pour envoyer un autre message.
+Ainsi, le serveur envoie continuellement des messages au client connecté.
+
+Simultanément, start_accept() se réinscrit pour accepter de nouveaux clients.
+Cela permet au serveur de gérer plusieurs clients en parallèle.
+
+Enfin, io_context.run() dans le main lance tout le processus, permettant au serveur d’accepter des connexions et d’envoyer des messages en continu, sans blocage.
+
+
+
+PARTIE CLIENT
+
+Le programme commence avec la création de boost::asio::io_context, la boucle d'événements de Boost.Asio.
+Ensuite, une instance de AsyncClient est initialisée avec l'adresse IP du serveur ("127.0.0.1") et le port ("1234").
+
+Dans le constructeur, le client crée un tcp::endpoint pour se connecter au serveur et appelle socket_.async_connect,
+une connexion asynchrone. Une fois la connexion établie, on_connect est appelé : il affiche un message de confirmation
+et appelle prompt_user, qui demande à l'utilisateur de saisir un message.
+
+Dans prompt_user, l'utilisateur saisit un message via std::cin. Ce message est ensuite envoyé au serveur via send_message,
+qui utilise boost::asio::async_write pour transmettre les données.
+Une fois le message envoyé, prompt_user est relancé pour permettre à l'utilisateur de saisir un autre message.
+Cela crée une boucle interactive où le client peut envoyer des messages en continu au serveur.
