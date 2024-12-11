@@ -11,21 +11,16 @@
 
 class ClientManager {
 private:
-  boost::mutex client_mutex_; // Mutex pour synchronisation thread-safe
+  boost::mutex client_mutex_; // Mutex
   std::unordered_map<std::string, std::shared_ptr<boost::asio::ip::tcp::socket>>
       connectedclients; // Associe noms et sockets
 public:
-  ClientManager() = default; // Constructeur par défaut
   // Ajoute un utilisateur (nom et socket)
   void add_client(const std::string &name,
                   std::shared_ptr<boost::asio::ip::tcp::socket> socket);
-
   // Récupère une socket associée à un nom
   std::shared_ptr<boost::asio::ip::tcp::socket>
   get_client_socket(const std::string &name);
-
-  // Vérifie si un nom d'utilisateur existe
-  bool client_exists(const std::string &name);
 
   // Supprime un utilisateur
   void remove_client(const std::string &name);
