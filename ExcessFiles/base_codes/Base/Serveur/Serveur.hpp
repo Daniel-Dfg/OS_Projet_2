@@ -1,6 +1,7 @@
 #ifndef SERVEUR_HPP
 #define SERVEUR_HPP
 
+#include "ClientManager.hpp"
 #include <boost/asio.hpp>
 #include <iostream>
 #include <string>
@@ -9,6 +10,7 @@
 class Serveur {
 private:
   std::string sender, receiver; // Les noms des utilisateurs
+  ClientManager clientmanager;
   boost::asio::io_context
       io_context; // Contexte I/O pour les opérations asynchrones
   boost::asio::thread_pool
@@ -21,6 +23,7 @@ private:
   void acceptConnections(boost::asio::ip::tcp::acceptor &acceptor,
                          std::shared_ptr<boost::asio::ip::tcp::socket>
                              socket); // Gère les connexions entrantes
+
 public:
   bool running = true;
 

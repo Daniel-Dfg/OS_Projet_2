@@ -52,16 +52,23 @@ void Serveur::acceptConnections(
   acceptor.async_accept(*socket, [this, socket, acceptor_ptr = acceptor_](
                                      boost::system::error_code ec) mutable {
     if (!ec) {
+      // Simplement pour simulé les connexions de différent utilisateur
       std::cout << "Connexion acceptée avec un client." << std::endl;
+      static int nbuser = 0;
+      std::string username = "user" + std::to_string(nbuser);
+      nbuser++;
+      // ajoute le client à la base de donnée de client connecté
+      clientmanager.add_client(username, socket);
+      clientmanager.print_client_liste();
 
-      // Traite le client dans une tâche soumise à io_context
       boost::asio::post(io_context, [this, socket]() mutable {
         handleClient(std::move(*socket));
       });
 
       // Prépare une nouvelle socket pour la prochaine connexion
-      auto newSocket =
+      std::shared_ptr<boost::asio::ip::tcp::socket> newSocket =
           std::make_shared<boost::asio::ip::tcp::socket>(io_context);
+
       acceptConnections(*acceptor_ptr, newSocket);
     } else {
       std::cerr << "Erreur lors de l'acceptation : " << ec.message()
