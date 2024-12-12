@@ -6,10 +6,10 @@
 #include <iostream>
 #include <string>
 
-// La classe SERVEUR gère la communication entre deux utilisateurs via des pipes
+// La classe Serveur gère la communication entre deux utilisateurs via des pipes
 class Serveur {
 private:
-  std::string sender, receiver; // Les noms des utilisateurs
+  std::string sender, receiver; // Les noms des utilisateurs (a supprimé)
   ClientManager clientmanager;
   boost::asio::io_context
       io_context; // Contexte I/O pour les opérations asynchrones
@@ -20,9 +20,10 @@ private:
 
   // Méthodes privées
   void createSocket(int port); // Crée une socket principale
-  void acceptConnections(boost::asio::ip::tcp::acceptor &acceptor,
-                         std::shared_ptr<boost::asio::ip::tcp::socket>
-                             socket); // Gère les connexions entrantes
+  void acceptConnections(
+      boost::asio::ip::tcp::acceptor &acceptor,
+      std::shared_ptr<boost::asio::ip::tcp::socket>
+          socket); // Gère les connexions entrantes et socket dédié
 
 public:
   bool running = true;
@@ -31,16 +32,18 @@ public:
   Serveur(std::string sender, std::string receiver, int nbdethreads)
       : sender(std::move(sender)), receiver(std::move(receiver)), io_context(),
         threadPool(nbdethreads), nbdethreads(nbdethreads), running(true) {}
+
   boost::asio::io_context &getIoContext() { return io_context; }
   // Méthodes publiques
   void
   submitToPool(boost::asio::ip::tcp::socket
                    socket); // Envoie la gestion d'un client dans le thread pool
   int start(bool modBot, bool modManuel); // Démarre le serveur
-  void
-  handleClient(boost::asio::ip::tcp::socket socket); // Gère un client connecté
-  void startIoContextWithThreadPool();               // Lance le contexte I/O
-  void stop(); // Arrête le serveur proprement
+  void handleClient(
+      boost::asio::ip::tcp::socket
+          socket); // Gère un client connecté (a remplacer par client session)
+  void startIoContextWithThreadPool(); // Lance le contexte I/O
+  void stop();                         // Arrête le serveur proprement
 };
 
 #endif // SERVEUR_HPP

@@ -1,7 +1,8 @@
 
 #include "ClientManager.hpp"
 
-// Ajoute un utilisateur (nom et socket)
+// Ajoute un utilisateur (nom et socket) => à changer en ajouter un nom avec une
+// instance de clientSession
 void ClientManager::add_client(
     const std::string &name,
     std::shared_ptr<boost::asio::ip::tcp::socket> socket) {

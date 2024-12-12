@@ -9,6 +9,7 @@
 #include <string>
 #include <unordered_map>
 
+// Gère la liste des clients connecté
 class ClientManager {
 private:
   boost::mutex client_mutex_; // Mutex

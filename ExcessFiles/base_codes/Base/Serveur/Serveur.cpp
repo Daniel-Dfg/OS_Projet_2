@@ -1,5 +1,4 @@
 #include "Serveur.hpp"
-#include <typeinfo>
 // Soumet une tâche au thread_pool pour l'exécuter via io_context
 void Serveur::submitToPool(boost::asio::ip::tcp::socket socket) {
   boost::asio::post(io_context, [socket = std::move(socket)]() {
@@ -39,12 +38,12 @@ void Serveur::acceptConnections(
     boost::asio::ip::tcp::acceptor &acceptor,
     std::shared_ptr<boost::asio::ip::tcp::socket> socket) {
   if (!running) {
-    std::cerr << "Serveur arrêté. Fin des acceptations." << std::endl;
+    std::cerr << "Serveur arrêté. Fin des acceptations" << std::endl;
     return;
   }
 
   if (!acceptor.is_open()) {
-    std::cerr << "Acceptor fermé. Fin des acceptations." << std::endl;
+    std::cerr << "Acceptor fermé. Fin des acceptations" << std::endl;
     return;
   }
 
@@ -53,7 +52,7 @@ void Serveur::acceptConnections(
                                      boost::system::error_code ec) mutable {
     if (!ec) {
       // Simplement pour simulé les connexions de différent utilisateur
-      std::cout << "Connexion acceptée avec un client." << std::endl;
+      std::cout << "Connexion acceptée avec un client" << std::endl;
       static int nbuser = 0;
       std::string username = "user" + std::to_string(nbuser);
       nbuser++;
@@ -61,9 +60,10 @@ void Serveur::acceptConnections(
       clientmanager.add_client(username, socket);
       clientmanager.print_client_liste();
 
-      boost::asio::post(io_context, [this, socket]() mutable {
-        handleClient(std::move(*socket));
-      });
+      boost::asio::post(io_context,
+                        [this, socket]() mutable { // Soumet au pole la tâche
+                          handleClient(std::move(*socket));
+                        });
 
       // Prépare une nouvelle socket pour la prochaine connexion
       std::shared_ptr<boost::asio::ip::tcp::socket> newSocket =
@@ -77,7 +77,7 @@ void Serveur::acceptConnections(
       // Si l'acceptor est toujours ouvert, réessaye l'acceptation (on peux
       // retirer ça)
       if (acceptor_ptr->is_open() && running) {
-        std::cout << "Relance de l'acceptation après une erreur." << std::endl;
+        std::cout << "Relance de l'acceptation après une erreur" << std::endl;
         acceptConnections(
             *acceptor_ptr,
             std::make_shared<boost::asio::ip::tcp::socket>(io_context));
@@ -89,10 +89,11 @@ void Serveur::acceptConnections(
 // Lance la gestion des tâches dans io_context avec un pool de threads
 void Serveur::startIoContextWithThreadPool() {
   try {
-    io_context
-        .restart(); // Prépare la file d'evenements pour les nouvelles tâches
+    // Prépare la file d'evenements pour les nouvelles tâches
+    io_context.restart();
+
     for (size_t i = 0; i < nbdethreads; ++i) {
-      boost::asio::post(threadPool, [this]() {
+      boost::asio::post(threadPool, [this]() { // soumet au pool la tâche
         try {
           io_context.run(); // Exécute les tâches dans la file
         } catch (const std::exception &e) {
@@ -106,16 +107,17 @@ void Serveur::startIoContextWithThreadPool() {
               << std::endl;
   }
 }
-// Gère la communication avec un client connecté
+// Gère la communication avec un client connecté, A remplacé avec ClientSession
 void Serveur::handleClient(boost::asio::ip::tcp::socket socket) {
   try {
     char buffer[1024]; // Buffer pour lire les messages
     while (true) {
       boost::system::error_code error;
-      // Devrais s'occuper d'envoyer au bon utilisateur
-      // Extraction du pseudo du destinataire
-      // Lecture d'un message depuis le client (fais)
-      size_t length = socket.read_some(boost::asio::buffer(buffer), error);
+      size_t length =
+          socket.read_some(boost::asio::buffer(buffer),
+                           error); // lecture bloquante pour test à changer
+
+      // Gestion des erreurs
       if (error == boost::asio::error::eof ||
           error == boost::asio::error::connection_reset) {
         std::cout << "Connexion fermée par le client." << std::endl;
@@ -154,6 +156,7 @@ void Serveur::stop() {
 
 // Point d'entrée pour démarrer le serveur
 int Serveur::start(bool modBot, bool modManuel) {
+
   createSocket(1234); // Configure la socket d'écoute
 
   std::cout << "Serveur prêt. En attente de connexions..." << std::endl;

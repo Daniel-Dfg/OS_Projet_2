@@ -5,7 +5,8 @@
 int main() {
   try {
     std::string sender = "Serveur";
-    std::string receiver = "Client";
+    std::string receiver = "Client"; // Dois retirer sender receiver et
+                                     // uniquement garder nombre de threads
 
     Serveur serveur(sender, receiver, 4);
 
@@ -15,7 +16,7 @@ int main() {
     signals.async_wait([&serveur](boost::system::error_code /*ec*/,
                                   int /*signal*/) { serveur.stop(); });
 
-    serveur.start(false, false);
+    serveur.start(false, false); // supprimé à mettre dans les ClientSession
 
   } catch (const std::exception &e) {
     std::cerr << "Erreur : " << e.what() << std::endl;
