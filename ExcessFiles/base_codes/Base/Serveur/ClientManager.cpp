@@ -37,7 +37,7 @@ void ClientManager::remove_client(const std::string &name) {
 }
 
 // Imprime la liste des clients
-void ClientManager::print_client_liste() {
+void ClientManager::print_client_liste() const {
   std::cout << "Liste des clients:" << std::endl;
   std::cout << "---------------------" << std::endl;
   for (const auto &[name, socket] : connectedclients) {

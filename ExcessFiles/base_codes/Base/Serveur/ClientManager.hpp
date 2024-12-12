@@ -24,7 +24,7 @@ public:
 
   // Supprime un utilisateur
   void remove_client(const std::string &name);
-  void print_client_liste();
+  void print_client_liste() const;
 };
 
 #endif // CLIENTMANAGER_HPP

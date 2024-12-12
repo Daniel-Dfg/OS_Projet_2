@@ -1,5 +1,5 @@
 #include "Serveur.hpp"
-
+#include <typeinfo>
 // Soumet une tâche au thread_pool pour l'exécuter via io_context
 void Serveur::submitToPool(boost::asio::ip::tcp::socket socket) {
   boost::asio::post(io_context, [socket = std::move(socket)]() {
@@ -112,33 +112,25 @@ void Serveur::handleClient(boost::asio::ip::tcp::socket socket) {
     char buffer[1024]; // Buffer pour lire les messages
     while (true) {
       boost::system::error_code error;
-
-      // Lecture d'un message depuis le client
+      // Devrais s'occuper d'envoyer au bon utilisateur
+      // Extraction du pseudo du destinataire
+      // Lecture d'un message depuis le client (fais)
       size_t length = socket.read_some(boost::asio::buffer(buffer), error);
       if (error == boost::asio::error::eof ||
           error == boost::asio::error::connection_reset) {
         std::cout << "Connexion fermée par le client." << std::endl;
+        // clientmanager.remove_client() retire le client
         break;
       } else if (error) {
         std::cerr << "Erreur lors de la lecture : " << error.message()
                   << std::endl;
         break;
       }
-
       // Affiche le message reçu
       std::string message(buffer, length);
       std::cout << "Reçu : " << message << std::endl;
-
-      // Réponse au client
-      std::string response = "Message reçu par le serveur : " + message;
-      boost::asio::write(socket, boost::asio::buffer(response), error);
-
-      if (error) {
-        std::cerr << "Erreur lors de l'envoi : " << error.message()
-                  << std::endl;
-        break;
-      }
     }
+
   } catch (const std::exception &e) {
     std::cerr << "Exception dans handleClient : " << e.what() << std::endl;
   }
@@ -170,7 +162,6 @@ int Serveur::start(bool modBot, bool modManuel) {
 
   // Bloque jusqu'à ce que toutes les tâches dans le thread_pool soient
   // terminées
-  threadPool.join();
-
+  threadPool.join(); // Attend que toutes les tâches terminent
   return 0;
 }

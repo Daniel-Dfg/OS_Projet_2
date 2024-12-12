@@ -12,7 +12,7 @@ int main() {
 
     // Démarre la boucle d'événements
     io_context.run();
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     std::cerr << "Erreur : " << e.what() << "\n";
   }
 
