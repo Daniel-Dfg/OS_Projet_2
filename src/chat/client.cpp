@@ -45,11 +45,12 @@ void Client::readMessages() {
 
 void Client::sendMessages(const std::string& message) {
     boost::asio::async_write(socket_, boost::asio::buffer(message + "\n"),
-        [](const boost::system::error_code& errorSending, std::size_t /*length*/) {
-            if (errorSending) {
-                std::cerr << "Erreur envoie message: " << errorSending.message() << "\n";
-            }
-        });
+         [](const boost::system::error_code& errorSending, std::size_t /*length*/) {
+             if (errorSending) {
+                 std::cerr << "Erreur envoie message: " << errorSending.message() << "\n";
+             }
+         });
+
 }
 
 
