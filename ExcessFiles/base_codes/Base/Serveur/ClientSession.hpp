@@ -8,7 +8,8 @@
 #include <string>
 
 // Instance d'une session client, s'occupe des envois / récepetion message au
-// socket client
+// socket client, si on veux que ces instances de classe peuvent avoir un shared
+// pointeur on met ça
 class ClientSession : public std::enable_shared_from_this<ClientSession> {
 private:
   std::shared_ptr<boost::asio::ip::tcp::socket> socket_;
@@ -41,6 +42,7 @@ public:
                  &connectedclient);
   // Ajouter un message à la file sortante
   void queueMessage(const Message &msg);
+  std::string get_name() { return name_; }
   void close_socket() {
     try {
       if (socket_ &&

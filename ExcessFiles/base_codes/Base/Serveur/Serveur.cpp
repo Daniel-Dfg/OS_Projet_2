@@ -120,6 +120,9 @@ void Serveur::startIoContextWithThreadPool() {
 // Gère la communication avec un client connecté, A remplacé avec ClientSession
 void Serveur::handleClient(std::shared_ptr<ClientSession> clientsession) {
   clientsession->start(clientmanager.get_clients_list());
+  // supprime le client s'il se déconnecte du socket avec un signal, et devras
+  // faire un truc du genre
+  // clientmanager.remove_client(clientsession->get_name());
 }
 
 // Arrête proprement le serveur

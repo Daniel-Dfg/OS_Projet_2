@@ -95,7 +95,7 @@ void ClientSession::queueMessage(const Message &msg) {
   std::cout << "Message ajouté à la file sortante : " << msg.getText()
             << std::endl;
   outgoingMessages.push(msg);
-  if (wasEmpty) { // Si la file était vide, déclenche `send_message`
+  if (wasEmpty) { // Si la file était vide, déclenche "send_message"
     auto self = shared_from_this();
     boost::asio::post(socket_->get_executor(),
                       [this, self]() { send_message(); });
