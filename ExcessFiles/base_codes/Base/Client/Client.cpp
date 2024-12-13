@@ -1,62 +1,72 @@
 #include "Client.hpp"
-
 #include <boost/asio.hpp>
-#include <functional>
 #include <iostream>
-#include <string>
+#include <thread>
 
 using boost::asio::ip::tcp;
 
 Client::Client(boost::asio::io_context &io_context, const std::string &ip,
                const std::string &port)
-    : socket_(io_context) {
-  // Crée un endpoint avec l'adresse IP et le port fournis
+    : socket_(io_context), io_context_(io_context) {
   tcp::endpoint endpoint(boost::asio::ip::make_address(ip), std::stoi(port));
 
-  // Démarre une connexion asynchrone
-  socket_.async_connect(
-      endpoint, std::bind(&Client::on_connect, this, std::placeholders::_1));
+  socket_.async_connect(endpoint,
+                        [this](const boost::system::error_code &errorCode) {
+                          tryConnect(errorCode);
+                        });
 }
 
-void Client::on_connect(const boost::system::error_code &ec) {
-  if (!ec) {
-    std::cout << "Connecté au serveur !" << std::endl;
+void Client::run() {
+  std::thread readThread([this]() { io_context_.run(); });
+  userInput();
+  readThread.join();
+}
 
-    // Démarre une lecture asynchrone pour recevoir les messages
-
-    // Démarre la saisie utilisateur
-    prompt_user();
+void Client::tryConnect(const boost::system::error_code &errorCode) {
+  if (!errorCode) {
+    std::cout << "Connexion réussi " << std::endl;
+    readMessages();
   } else {
-    std::cerr << "Erreur de connexion : " << ec.message() << std::endl;
+    std::cerr << "Erreur de connexion " << errorCode.message() << "\n";
   }
 }
 
-void Client::send_message(const std::string &message) {
-  boost::asio::async_write(
-      socket_,
-      boost::asio::buffer(message +
-                          '\n'), // Ajoute un délimiteur '\n' pour les messages
-      [this](const boost::system::error_code &ec, std::size_t /*length*/) {
-        if (ec) {
-          std::cerr << "Erreur d'envoi : " << ec.message() << std::endl;
+void Client::readMessages() {
+  boost::asio::async_read_until(
+      socket_, boost::asio::dynamic_buffer(buffer_), '\n',
+      [this](const boost::system::error_code &errorReading,
+             std::size_t length) {
+        if (!errorReading) {
+          std::cout << buffer_.substr(0, length);
+          buffer_.erase(0, length);
+          readMessages();
         } else {
-          prompt_user(); // Redemande un message après un envoi réussi
+          std::cerr << "Erreur lecture de message: " << errorReading.message()
+                    << std::endl;
         }
       });
 }
 
-void Client::prompt_user() {
-  std::cout << "Entrez un message : ";
-  std::string message;
-  std::getline(std::cin, message); // Lecture de l'entrée utilisateur
+void Client::sendMessages(const std::string &message) {
+  boost::asio::async_write(socket_, boost::asio::buffer(message + "\n"),
+                           [](const boost::system::error_code &errorSending,
+                              std::size_t /*length*/) {
+                             if (errorSending) {
+                               std::cerr << "Erreur envoie message: "
+                                         << errorSending.message() << std::endl;
+                             }
+                           });
+}
 
-  // Si l'utilisateur entre "quit", ferme la connexion
-  if (message == "quit") {
-    std::cout << "Déconnexion..." << std::endl;
-    socket_.close();
-    return;
+void Client::userInput() {
+  while (running) {
+    std::string message;
+    std::getline(std::cin, message);
+
+    if (message == "quit") {
+      io_context_.stop();
+      running = false;
+    }
+    sendMessages(message);
   }
-
-  // Envoie le message
-  send_message(message);
 }

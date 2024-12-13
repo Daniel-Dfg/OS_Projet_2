@@ -11,7 +11,7 @@
 // socket client
 class ClientSession : public std::enable_shared_from_this<ClientSession> {
 private:
-  boost::asio::ip::tcp::socket socket_;
+  std::shared_ptr<boost::asio::ip::tcp::socket> socket_;
   MessageQueue incomingMessages; // File de messages entrants
   MessageQueue outgoingMessages; // File de messages sortants
   std::string name_;
@@ -21,12 +21,32 @@ private:
   void handle_received_message(const Message &msg); // Gérer un message reçu
 
 public:
-  ClientSession(boost::asio::ip::tcp::socket socket, const std::string &name)
+  ClientSession(std::shared_ptr<boost::asio::ip::tcp::socket> socket,
+                const std::string &name)
       : socket_(std::move(socket)), name_(name) {}
 
+  // Aucun traitement supplémentaire n'est nécessaire ici
+  // on dois move une deuxième fois pour que ça intègre dans la classe, sinon
+  // ce n'est pas compilable
+  std::shared_ptr<boost::asio::ip::tcp::socket> &get_socket() {
+    return socket_;
+  }
   void start();
   // Ajouter un message à la file sortante
   void queueMessage(const Message &msg);
+  void close_socket() {
+    try {
+      if (socket_ &&
+          socket_
+              ->is_open()) { // Vérifie si le pointeur et la socket sont valides
+        socket_->close();    // Ferme la socket encapsulée
+        std::cout << "Socket fermée pour le client : " << name_ << std::endl;
+      }
+    } catch (const std::exception &e) {
+      std::cerr << "Erreur lors de la fermeture de la socket : " << e.what()
+                << std::endl;
+    }
+  }
 };
 
 #endif // CLIENTSESSION_HPP

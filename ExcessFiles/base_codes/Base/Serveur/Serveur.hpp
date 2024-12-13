@@ -2,10 +2,10 @@
 #define SERVEUR_HPP
 
 #include "ClientManager.hpp"
+#include "ClientSession.hpp"
 #include <boost/asio.hpp>
 #include <iostream>
 #include <string>
-
 // La classe Serveur gère la communication entre deux utilisateurs via des pipes
 class Serveur {
 private:
@@ -39,9 +39,9 @@ public:
   submitToPool(boost::asio::ip::tcp::socket
                    socket); // Envoie la gestion d'un client dans le thread pool
   int start(bool modBot, bool modManuel); // Démarre le serveur
-  void handleClient(
-      boost::asio::ip::tcp::socket
-          socket); // Gère un client connecté (a remplacer par client session)
+  void handleClient(std::shared_ptr<ClientSession>
+                        clientsession); // Gère un client connecté (a remplacer
+                                        // par client session)
   void startIoContextWithThreadPool(); // Lance le contexte I/O
   void stop();                         // Arrête le serveur proprement
 };

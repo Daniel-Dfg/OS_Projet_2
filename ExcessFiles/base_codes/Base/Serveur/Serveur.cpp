@@ -51,21 +51,29 @@ void Serveur::acceptConnections(
   acceptor.async_accept(*socket, [this, socket, acceptor_ptr = acceptor_](
                                      boost::system::error_code ec) mutable {
     if (!ec) {
+
       // Simplement pour simulé les connexions de différent utilisateur
       std::cout << "Connexion acceptée avec un client" << std::endl;
       static int nbuser = 0;
       std::string username = "user" + std::to_string(nbuser);
       nbuser++;
+
       // ajoute le client à la base de donnée de client connecté
-      clientmanager.add_client(username, socket);
+      std::shared_ptr<ClientSession> clientsession =
+          std::make_shared<ClientSession>(socket, username);
+
+      // Directement crée et ajouter la session client pour pas alloué 2f
+      clientmanager.add_client(username, clientsession);
       clientmanager.print_client_liste();
 
-      boost::asio::post(io_context,
-                        [this, socket]() mutable { // Soumet au pole la tâche
-                          handleClient(std::move(*socket));
-                        });
+      boost::asio::post(
+          io_context,
+          [this, clientsession]() mutable { // Soumet au pole la tâche
+            handleClient(clientsession);
+          });
 
       // Prépare une nouvelle socket pour la prochaine connexion
+
       std::shared_ptr<boost::asio::ip::tcp::socket> newSocket =
           std::make_shared<boost::asio::ip::tcp::socket>(io_context);
 
@@ -93,14 +101,17 @@ void Serveur::startIoContextWithThreadPool() {
     io_context.restart();
 
     for (size_t i = 0; i < nbdethreads; ++i) {
-      boost::asio::post(threadPool, [this]() { // soumet au pool la tâche
-        try {
-          io_context.run(); // Exécute les tâches dans la file
-        } catch (const std::exception &e) {
-          std::cerr << "Exception dans io_context.run : " << e.what()
-                    << std::endl;
-        }
-      });
+      boost::asio::post(
+          threadPool,
+          [this]() { // chaque thread du pool va exécuter les
+                     // evenements du io_context.run, ce post est nécessaire
+            try {
+              io_context.run();
+            } catch (const std::exception &e) {
+              std::cerr << "Exception dans io_context.run : " << e.what()
+                        << std::endl;
+            }
+          });
     }
   } catch (const std::exception &e) {
     std::cerr << "Exception dans startIoContextWithThreadPool : " << e.what()
@@ -108,14 +119,15 @@ void Serveur::startIoContextWithThreadPool() {
   }
 }
 // Gère la communication avec un client connecté, A remplacé avec ClientSession
-void Serveur::handleClient(boost::asio::ip::tcp::socket socket) {
+void Serveur::handleClient(std::shared_ptr<ClientSession> clientsession) {
   try {
     char buffer[1024]; // Buffer pour lire les messages
     while (true) {
       boost::system::error_code error;
-      size_t length =
-          socket.read_some(boost::asio::buffer(buffer),
-                           error); // lecture bloquante pour test à changer
+      size_t length = clientsession->get_socket()->read_some(
+          boost::asio::buffer(buffer),
+          error); // lecture bloquante pour test si on
+                  // reçois les messages, à changer
 
       // Gestion des erreurs
       if (error == boost::asio::error::eof ||
@@ -139,6 +151,8 @@ void Serveur::handleClient(boost::asio::ip::tcp::socket socket) {
 }
 
 // Arrête proprement le serveur
+// Besoin d'une fonctionalité qui parcours tout les socket et les fermes un à un
+// (client manager remove all client)
 void Serveur::stop() {
   try {
     running = false;
@@ -146,7 +160,6 @@ void Serveur::stop() {
       std::cout << "Arrêt du serveur en cours..." << std::endl;
       io_context.stop();
     }
-    threadPool.join(); // Attend que toutes les tâches terminent
     std::cout << "Serveur arrêté proprement." << std::endl;
   } catch (const std::exception &e) {
     std::cerr << "Erreur lors de l'arrêt du serveur : " << e.what()
