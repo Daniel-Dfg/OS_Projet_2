@@ -1,3 +1,3 @@
 Acceptation de plusieurs clients à la fois sur le serveur.
 
-Communication du nombre de bytes écrits à chaque envoi (inspiré de l'exercice 4 du TP6).
+Le client possède deux threads : un receveur, et un envoyeur.

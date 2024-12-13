@@ -5,8 +5,10 @@
 #include <sys/types.h>
 #include <thread>
 #include <unistd.h> // Pour usleep()
+#include <poll.h>
+#include <unordered_map>
 
-using std::string;
+using std::string, std::unordered_map;
 
 class Message {
   string sender, receiver, text;
@@ -103,3 +105,16 @@ public:
 
   ~Client() { stop(); }
 };
+
+class Server{
+    static constexpr int MAX_CLIENTS = 1000;
+    static int server_fd;
+    static std::vector<pollfd> poll_fds;
+    static unordered_map<string, pollfd> clients_fds;
+
+
+    //Pour chaque connexion entrante :
+        //Prendre en compte le poll
+
+
+}

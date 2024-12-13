@@ -2,7 +2,7 @@ CC = g++
 CFLAGS = -Wall -Wextra
 
 # Changez ce nom selon le scénario à compiler !
-CASE_DIR = case2
+CASE_DIR = case3
 OBJ_DIR = obj
 
 # Trouver tous les fichiers source .cpp dans le dossier spécifié
