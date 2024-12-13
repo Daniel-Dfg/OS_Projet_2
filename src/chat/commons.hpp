@@ -5,7 +5,6 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-
 using std::string;
 
 inline int check_return_value(int value, string elem = "???") {

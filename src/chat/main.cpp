@@ -1,18 +1,16 @@
-#include <boost/asio.hpp>
-#include "client.hpp"
-#include <iostream>
+#include "SetUp.hpp"
+#include "Client.hpp"
 
 
 int main(int argc, char* argv[]) {
-   try {
-      boost::asio::io_context io_context;
+    std::string name ="";
+    std::string IP = "127.0.0.1";
+    int port = 1234;
 
-      // Initialise et démarre le client
-      Client client(io_context, "127.0.0.1", "1234");
-      client.run();
-   } catch (const std::exception& e) {
-      std::cerr << "Erreur : " << e.what() << "\n";
-   }
+    OptionsProgramme options;
+    SetUp(argc,argv,name,IP,port,&options);
 
-   return 0;
+
+    Client(name,options.isManuel,options.isBot,IP,port);
+    return 0;
 }
