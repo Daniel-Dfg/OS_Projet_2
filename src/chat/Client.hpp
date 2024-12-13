@@ -25,7 +25,6 @@ private:
     int socket_; // Socket TCP-IPv4
     struct sockaddr_in serv_addr_;
 
-    std::thread reader_;
     std::thread readThread_;
     std::atomic<bool> connected{false};
     SignalManager signalManager;
