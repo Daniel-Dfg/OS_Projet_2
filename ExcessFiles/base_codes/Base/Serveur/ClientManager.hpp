@@ -28,6 +28,10 @@ public:
   // Supprime un utilisateur
   void remove_client(const std::string &name);
   void print_client_liste() const;
+  std::unordered_map<std::string, std::shared_ptr<ClientSession>> &
+  get_clients_list() {
+    return connectedclients;
+  }
 };
 
 #endif // CLIENTMANAGER_HPP

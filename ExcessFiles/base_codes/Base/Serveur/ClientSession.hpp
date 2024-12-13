@@ -1,7 +1,7 @@
 #ifndef CLIENTSESSION_HPP
 #define CLIENTSESSION_HPP
-
 #include "MessageQueue.hpp"
+
 #include <boost/asio.hpp>
 #include <iostream>
 #include <memory>
@@ -16,11 +16,17 @@ private:
   MessageQueue outgoingMessages; // File de messages sortants
   std::string name_;
 
-  void read_message(); // Lire les messages du client
   void send_message(); // Envoyer un message au client
-  void handle_received_message(const Message &msg); // Gérer un message reçu
+  void handle_received_message(const Message &msg);
+
+  // Gérer un message reçu
+  void
+  read_message(std::unordered_map<std::string, std::shared_ptr<ClientSession>>
+                   &clientconnected);
 
 public:
+  std::array<char, 1024> buffer_; // Taille fixe pour le buffer de lecture
+
   ClientSession(std::shared_ptr<boost::asio::ip::tcp::socket> socket,
                 const std::string &name)
       : socket_(std::move(socket)), name_(name) {}
@@ -31,7 +37,8 @@ public:
   std::shared_ptr<boost::asio::ip::tcp::socket> &get_socket() {
     return socket_;
   }
-  void start();
+  void start(std::unordered_map<std::string, std::shared_ptr<ClientSession>>
+                 &connectedclient);
   // Ajouter un message à la file sortante
   void queueMessage(const Message &msg);
   void close_socket() {

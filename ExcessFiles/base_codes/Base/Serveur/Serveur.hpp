@@ -2,7 +2,6 @@
 #define SERVEUR_HPP
 
 #include "ClientManager.hpp"
-#include "ClientSession.hpp"
 #include <boost/asio.hpp>
 #include <iostream>
 #include <string>

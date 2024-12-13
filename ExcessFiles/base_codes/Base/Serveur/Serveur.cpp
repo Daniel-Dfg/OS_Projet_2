@@ -93,7 +93,6 @@ void Serveur::acceptConnections(
     }
   });
 }
-
 // Lance la gestion des tâches dans io_context avec un pool de threads
 void Serveur::startIoContextWithThreadPool() {
   try {
@@ -120,34 +119,7 @@ void Serveur::startIoContextWithThreadPool() {
 }
 // Gère la communication avec un client connecté, A remplacé avec ClientSession
 void Serveur::handleClient(std::shared_ptr<ClientSession> clientsession) {
-  try {
-    char buffer[1024]; // Buffer pour lire les messages
-    while (true) {
-      boost::system::error_code error;
-      size_t length = clientsession->get_socket()->read_some(
-          boost::asio::buffer(buffer),
-          error); // lecture bloquante pour test si on
-                  // reçois les messages, à changer
-
-      // Gestion des erreurs
-      if (error == boost::asio::error::eof ||
-          error == boost::asio::error::connection_reset) {
-        std::cout << "Connexion fermée par le client." << std::endl;
-        // clientmanager.remove_client() retire le client
-        break;
-      } else if (error) {
-        std::cerr << "Erreur lors de la lecture : " << error.message()
-                  << std::endl;
-        break;
-      }
-      // Affiche le message reçu
-      std::string message(buffer, length);
-      std::cout << "Reçu : " << message << std::endl;
-    }
-
-  } catch (const std::exception &e) {
-    std::cerr << "Exception dans handleClient : " << e.what() << std::endl;
-  }
+  clientsession->start(clientmanager.get_clients_list());
 }
 
 // Arrête proprement le serveur

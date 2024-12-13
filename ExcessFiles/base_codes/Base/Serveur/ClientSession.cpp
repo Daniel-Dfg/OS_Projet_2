@@ -2,26 +2,85 @@
 // Instance d'une session client, s'occupe des envois / récepetion message au
 // socket client
 
-void ClientSession::start() {
-  // Démarre lançant les opérations de lecture et d'écriture asynchrone
-  read_message();
-  send_message();
+void ClientSession::start(
+    std::unordered_map<std::string, std::shared_ptr<ClientSession>>
+        &connectedclient) {
+  read_message(connectedclient); // Lis les messages du client et les envoies
+                                 // dans les outgoing message du destinataire
+  send_message();                // lis les ongoing message du client actuel
 }
 
-// Place les messages à envoyé dans une file d'attente (A protégé)
-void ClientSession::read_message() {
-  // Attendre un message du clientA de manière asynchrone
-  // 1) Message reçu => extrait l'expéditeur(clientA) destinataire(clientB) et
-  // texte 2) Le message est ajouté à la file `incomingMessages` de
-  // l'expediteur(ClientA)
+// On lis ce que notre client envoie
+void ClientSession::read_message(
+    std::unordered_map<std::string, std::shared_ptr<ClientSession>>
+        &clientconnected) {
+  auto self =
+      shared_from_this(); // Maintenir l'objet vivant pendant le callback
+
+  // Lecture en mode asynchrone, non bloquante
+  socket_->async_read_some(
+      boost::asio::buffer(buffer_),
+      [this, self, &clientconnected](boost::system::error_code ec,
+                                     std::size_t length) {
+        if (!ec) {
+          // Si on est ici, on a reçu le message avec succès
+
+          // Temporaire, c'est pour affiché qu'on a bien reçu le message sur le
+          // serveur
+          std::string message(buffer_.data(),
+                              length); // Convertir le buffer en std::string
+          std::cout << "Reçu : " << message << std::endl;
+
+          Message msg(name_, message); // Crée le message avec le bon format
+
+          // Un essai pour envoyer à user1 un message, en récuperant la socket :
+          std::string destinataire = "user1";
+          auto pair = clientconnected.find(destinataire);
+          std::shared_ptr<boost::asio::ip::tcp::socket> socket =
+              pair->second->get_socket();
+          // écriture de manière synchrone
+
+          // Ajouter le message dans la file outgoingMessages du destinataire
+          pair->second->queueMessage(msg);
+
+          // Relancer une lecture asynchrone, il y a une méthode asychrone
+          // dans read_message, donc elle seras placer dans io_context et
+          // traité possiblement par un autre thread, contrairement aux
+          // fonctions et action synchrone réalisé dans cette partie du code
+          // qui seras exécuté dans le même thread
+          read_message(clientconnected);
+        }
+        // Devras faire la gestion des erreurs ici
+      });
 }
 
-// Le serveur lis les messages qu'on a envoyé au client (A protégé)
+// On envoie les messages à notre client
 void ClientSession::send_message() {
-  // Vérifier si la file `outgoingMessages` contient des messages à recevoir
-  // Si oui, prendre le premier message de la file et Une fois l'envoi terminé,
-  // passer au message suivant dans la file.
-  // Si la file est vide, ne rien faire
+  auto self =
+      shared_from_this(); // Maintenir l'objet vivant pendant le callback
+
+  if (!outgoingMessages.empty()) { // Vérifie si la file contient des messages
+    Message msg;
+    if (outgoingMessages.pop(msg)) { // Récupère le premier message de la file
+
+      auto data = std::make_shared<std::string>(msg.getText());
+      std::cout << "message : " << msg.getText() << std::endl;
+      // Envoi du message de manière asynchrones
+      boost::asio::async_write(*socket_, boost::asio::buffer(*data),
+                               [this, self, data](boost::system::error_code ec,
+                                                  std::size_t /*length*/) {
+                                 if (!ec) {
+                                   // Si l'envoi est réussi, vérifier s'il reste
+                                   // d'autres messages
+                                   send_message();
+                                 } else {
+                                   std::cerr
+                                       << "Erreur d'écriture : " << ec.message()
+                                       << std::endl;
+                                 }
+                               });
+    }
+  }
 }
 
 // Affiche les messages reçu à l'écran un part un
@@ -32,7 +91,15 @@ void ClientSession::handle_received_message(const Message &msg) {
 }
 // Push les messages dans la queue un par un
 void ClientSession::queueMessage(const Message &msg) {
+  bool wasEmpty = outgoingMessages.empty();
+  std::cout << "Message ajouté à la file sortante : " << msg.getText()
+            << std::endl;
   outgoingMessages.push(msg);
+  if (wasEmpty) { // Si la file était vide, déclenche `send_message`
+    auto self = shared_from_this();
+    boost::asio::post(socket_->get_executor(),
+                      [this, self]() { send_message(); });
+  }
 }
 
 // Fonctionnement
