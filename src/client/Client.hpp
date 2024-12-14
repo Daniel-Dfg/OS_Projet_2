@@ -10,7 +10,7 @@
 class Client {
 public:
 
-    Client(std::string name_,bool modManuel,bool modBot,std::string addressIp, int port);
+    Client(std::string name_,bool modManuel,bool modBot,std::string addressIp, int port, std::string realname);
     int Connect();
     void SendMessage();
     void ReceiveMessage();
@@ -26,6 +26,7 @@ private:
     std::string addressIP_;
     int port_;
     int socket_; // Socket TCP-IPv4
+    std::string realname_;
 
     std::thread readThread_;
     std::atomic<bool> connected{false};

@@ -1,11 +1,13 @@
 #include "Client.hpp"
 #include <sstream>
 
-Client::Client(std::string name, bool modManuel, bool modBot, std::string addressIP, int port) : name_(name),
-                                                                                                 modManuel_(modManuel),
-                                                                                                 modBot_(modBot),
-                                                                                                 addressIP_(addressIP),
-                                                                                                 port_(port) {
+Client::Client(std::string name, bool modManuel, bool modBot, std::string addressIP, int port, std::string realname)
+        : name_(name),
+          modManuel_(modManuel),
+          modBot_(modBot),
+          addressIP_(addressIP),
+          port_(port),
+          realname_(realname) {
     check_return_value(socket_ = socket(AF_INET, SOCK_STREAM, 0)); // Socket TCP-IPv4
     signalManager.initSignalHandling(modManuel_);
     Connect();
@@ -41,7 +43,7 @@ int Client::Connect() {
 
     readThread_ = std::thread(&Client::ReceiveMessage, this);
     // Envoyer le nom au serveur
-    ssize_t bytes = write(socket_, name_.c_str(), name_.length());
+    ssize_t bytes = write(socket_, realname_.c_str(), name_.length());
     if (bytes<0) { // TODO
         exit(1);
     }

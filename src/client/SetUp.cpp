@@ -51,8 +51,9 @@ static void SetIpAndPort(std::string &ip, int &port) {
     }
 }
 
-void SetUp(int argc, char *argv[],std::string& name, std::string &IP, int &PORT, OptionsProgramme *options) {
+void SetUp(int argc, char *argv[],std::string& name, std::string &IP, int &PORT, OptionsProgramme *options,std::string& realname) {
     VerifyEntries(argc, argv, options,name);
+    realname=name;
     SetNickName(name, options->isBot);
     SetIpAndPort(IP,PORT);
 
