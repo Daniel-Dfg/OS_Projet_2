@@ -1,26 +1,20 @@
-# Compiler and flags
+# Compiler
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra -pedantic
+CXXFLAGS = -std=c++23 -Wall -Wextra -O2 -g
 
-# Boost library
-BOOST_LIBS = -lboost_system -lboost_thread
-BOOST_INCLUDE = # Add your Boost include path here if needed
-BOOST_LIB_PATH = # Add your Boost library path here if needed
+# Target executable
+TARGET = chat
 
-# Source files and executable name
-SRC = main.cpp client.cpp
-EXEC = client_app
+# Source files
+SRCS = $(wildcard *.cpp)
 
 # Default target
-all: $(EXEC)
+all: clean $(TARGET)
 
-# Build the executable
-$(EXEC): $(SRC)
-	$(CXX) $(CXXFLAGS) $(BOOST_INCLUDE) $(SRC) -o $(EXEC) $(BOOST_LIB_PATH) $(BOOST_LIBS)
+# Compile and link directly to the executable
+$(TARGET):
+	$(CXX) $(CXXFLAGS) $(SRCS) -o $@
 
-# Clean build files
+# Clean up the executable
 clean:
-	rm -f $(EXEC)
-
-# Phony targets
-.PHONY: all clean
+	rm -f $(TARGET)

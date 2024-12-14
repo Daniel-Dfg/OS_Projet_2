@@ -3,14 +3,15 @@
 
 
 int main(int argc, char* argv[]) {
-    std::string name ="";
+    std::string name;
     std::string IP = "127.0.0.1";
-    int PORT = 1234;
+    int PORT = 8080;
 
     OptionsProgramme options;
+
     SetUp(argc,argv,name,IP,PORT,&options);
 
-
-    Client(name,options.isManuel,options.isBot,IP,PORT);
+    Client client(name,options.isManuel,options.isBot,IP,PORT);
+    std::cout<<"ok";
     return 0;
 }

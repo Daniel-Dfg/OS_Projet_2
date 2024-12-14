@@ -16,15 +16,35 @@ int Client::Connect() {
     struct sockaddr_in serv_addr;
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(port_);
-    check_return_value(inet_pton(AF_INET, addressIP_.c_str(), &serv_addr.sin_addr));
-    check_return_value(connect(socket_, (struct sockaddr *) &serv_addr, sizeof(serv_addr)));
+    check_return_value(inet_pton(AF_INET, addressIP_.c_str(), &serv_addr.sin_addr),"inet ");
+    std::cout<<"Connexion au server ...\n";
+    // TODO revoir les cas d'échecs avec l'énoncé et les valeurs de retour
+    while (1) {
+        if (connect(socket_, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) ==0) {
+            std::cout<<"Connexion réussi\n";
+            break;
+        }
+        if (errno == ECONNREFUSED) {
+            std::cerr << "Connexion refusée par le serveur. Nouvel essai dans 5 secondes\n";
+        } else if (errno == ETIMEDOUT) {
+            std::cerr << "Le serveur n'a pas répondu : délai maximum dépassé.\n";
+            exit(ETIMEDOUT);
+        } else {
+            perror("Erreur de connexion\n");
+            exit(EXIT_FAILURE);
+        }
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+    }
 
     connected = true;
     signalManager.clientConnected= true;
 
     readThread_ = std::thread(&Client::ReceiveMessage, this);
     // Envoyer le nom au serveur
-    write(socket_, name_.c_str(), name_.length());
+    ssize_t bytes = write(socket_, name_.c_str(), name_.length());
+    if (bytes<0) { // TODO
+        exit(1);
+    }
     SendMessage();
     return CODE_RETOUR_NORMAL; // TODO A REVOIR
 }
@@ -33,7 +53,6 @@ void Client::SendMessage() {
     while (connected) {
         if (signalManager.showMemory) DisplayMemory();
         std::string message;
-        std::cout<<name_<<" : ";
         getline(std::cin, message);
         size_t space = message.find(' ');
         std::string onlyText = message.substr(space+1);
@@ -80,7 +99,7 @@ void Client::DisplayMessage(const char* buffer) {
     std::istringstream stream(receivedMessage);
     stream >> name;
     std::getline(stream,message);
-    std::cout<<name<< " : "<<message<<std::endl;
+    std::cout<<name << " : "<<message<<std::endl;
 }
 
 void Client::DisplayMemory() {}

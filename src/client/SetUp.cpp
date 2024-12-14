@@ -6,7 +6,7 @@ static void SetNickName(std::string& nick, bool bot) {
     else nick = "\x1B[4m[" + std::string(nick) + "]\x1B[0m";
 }
 
-
+// TODO : Faites de même si le pseudo est « . » ou « .. ».
 static void VerifyEntries(int argc, char *argv[],OptionsProgramme *opt,std::string& name) {
     if (argc < 2) {
         fputs("chat pseudo_utilisateur [--bot] [--manuel]\n", stderr);
@@ -15,10 +15,9 @@ static void VerifyEntries(int argc, char *argv[],OptionsProgramme *opt,std::stri
 
     const std::string charsInterdits = "/[]-";
     int index = 1;
-    name += argv[1];
+    name += argv[index];
     index++;
-
-    while (argv[index][0] != '-' && index<<argc) {
+    while (index<argc && argv[index][0] != '-') {
         name += ' ';
         name += argv[index];
         index++;
@@ -34,30 +33,27 @@ static void VerifyEntries(int argc, char *argv[],OptionsProgramme *opt,std::stri
             exit(CODE_RETOUR_PSEUDO_CARACTERES_INVALIDES);
         }
     }
-
     std::string firstParam = (argc > index) ? argv[index] : "";
     std::string secondParam = (argc > index+1) ? argv[index+1] : "";
     opt->isBot = (firstParam == "--bot" || secondParam == "--bot");
     opt->isManuel = (firstParam == "--manuel" || secondParam == "--manuel");
-
 }
 
 static void SetIpAndPort(std::string &ip, int &port) {
     const char *ipEnv = std::getenv("IP_SERVEUR");
     const char *portEnv = std::getenv("PORT_SERVEUR");
-    int portValue = std::stoi(portEnv);
     if (ipEnv!= nullptr) { // TODO checker si respecte le format IPv4
         ip = ipEnv;
     }
-    if (portEnv != nullptr && portValue>=1 && portValue<=65535) {
-        port=portValue;
+    if (portEnv != nullptr) {
+        int portValue = std::stoi(portEnv);
+        if (portValue>=1 && portValue<=65535) port=portValue;
     }
 }
 
-void SetUp(int argc, char *argv[], std::string &IP, int &PORT, OptionsProgramme *options) {
-    std::string nick;
-    VerifyEntries(argc, argv, options,nick);
-    SetNickName(nick, options->isBot);
+void SetUp(int argc, char *argv[],std::string& name, std::string &IP, int &PORT, OptionsProgramme *options) {
+    VerifyEntries(argc, argv, options,name);
+    SetNickName(name, options->isBot);
     SetIpAndPort(IP,PORT);
 
 }
