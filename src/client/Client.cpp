@@ -43,7 +43,7 @@ int Client::Connect() {
 
     readThread_ = std::thread(&Client::ReceiveMessage, this);
     // Envoyer le nom au serveur
-    ssize_t bytes = write(socket_, realname_.c_str(), name_.length());
+    ssize_t bytes = write(socket_, realname_.c_str(), realname_.length());
     if (bytes<0) { // TODO
         exit(1);
     }

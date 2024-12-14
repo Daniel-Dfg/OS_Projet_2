@@ -65,10 +65,8 @@ void Server::handleNewConnection() {
 
     char buffer[30];
     int bytes_received = check_return_value(read(client_fd, buffer, sizeof(buffer) - 1), "lecture pseudo");
-    buffer[bytes_received] = '\0'; // c'est le client qui devras s'occuper d'envoyer des messages sous forme correcte, donc devras retirer le "-1" plus haut et le "\0"
-
-    string client_name(buffer, bytes_received);
-
+    buffer[bytes_received] = '\0';
+    string client_name(buffer);
 
     // Permet de surveiller si il y a un événment disponible sur la socket du client, push dans le pool des truc à surveillé
     pollfd client_pollfd = {
@@ -99,11 +97,12 @@ void Server::handleClientMessage(int client_fd) {
         handleDisconnection(client_fd);
         return;
     }
-    std::cout << "Message reçu : " << buffer << std::endl;
     const string sender = fd_to_name[client_fd];
     //Message msg(buffer, bytes);
     Message msg(sender, buffer); //FIX : tableau de char à la place de string
+    std::cout << "Message de: " << msg.getSender() << " à envoyé à " << msg.getReceiver() << " : " << msg.getText() << std::endl;
     message_queue.push(msg);
+    sendMessage(msg.getReceiver(), msg);
 }
 
 void Server::handleDisconnection(int client_fd) {
@@ -136,7 +135,7 @@ void Server::sendMessage(const string receiver, const Message& msg) {
 
     if (auto it = name_to_fd.find(receiver); it != name_to_fd.end()) {
         check_return_value(
-            write(it->second, msg.getText().c_str(), sizeof(msg.getText())),
+            write(it->second, msg.getText().c_str(), msg.getText().size()),
             "écriture au client"
         );
     }
@@ -174,22 +173,22 @@ void Server::stop() {
 
 };
 
-/*
+
 // A ENLEVER APRES QUON EST AJOUTER LES HPP, c'est juste pour faire compilé, je n'ai pas mis dans un hpp
 // pour l'instant car on pouvais toujours déléguer ces tâches à d'autre classe ou quoi
 int Server::server_fd = 0;
 std::vector<pollfd> Server::poll_fds;
-std::unordered_map<const char *, int> Server::name_to_fd;
-std::unordered_map<int, const char *> Server::fd_to_name;
+std::unordered_map<string, int> Server::name_to_fd;
+std::unordered_map<int, string> Server::fd_to_name;
 std::queue<Message> Server::message_queue;
 bool Server::running = false;
-*/
+
 
 int main() {
 //signal(SIGPIPE, SIG_IGN);
 
 try {
-    Server::start(8080);
+    Server::start(1234);
     Server::run();
 } catch (const std::exception& e) {
     std::cerr << "Erreur fatale: " << e.what() << std::endl;

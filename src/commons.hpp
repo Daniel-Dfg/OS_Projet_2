@@ -25,7 +25,7 @@ public:
         size_t pos = raw_text.find(" ");
         if (pos != string::npos) {
             receiver = raw_text.substr(0, pos);
-            text = raw_text.substr(pos + 1);
+            text = sender + " " + raw_text.substr(pos + 1);
         }
         else {
             //TODO : gérer le cas d'un message au format incorrect.
