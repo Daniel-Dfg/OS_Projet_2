@@ -1,7 +1,6 @@
 #pragma once
 #include <iostream>
 #include <string>
-#include <sstream>
 
 using std::string;
 
@@ -15,21 +14,29 @@ inline int check_return_value(int value, string elem = "???") {
 
 class Message {
 private:
-    const char* sender;
-    const char* receiver;
-    const char* text;
+    static int constexpr MAX_MESSAGE_SIZE = 1024;
+    string sender;
+    string receiver;
+    string text;
 
 public:
-
-    Message(const char* sender_, const char* raw_text)
-        : sender(sender_){
-            //parser le tableau de char pour en extraire le destinataire
-            //(ne devrait-on pas utiliser des strings ?)
+    Message(const string& sender_, const string& raw_text)
+        : sender(sender_), text(raw_text) {
+        size_t pos = raw_text.find(" ");
+        if (pos != string::npos) {
+            receiver = raw_text.substr(0, pos);
+            text = raw_text.substr(pos + 1);
         }
-// devrais crée une méthode ici pour récuperer le destinataire, car les méthodes précédente ne marche que sur les string
+        else {
+            //TODO : gérer le cas d'un message au format incorrect.
+        }
 
-    const char* getSender() const { return sender; }
-    const char* getReceiver() const { return receiver; }
-    const char* getText() const { return text; }
+        if(sizeof(text) > MAX_MESSAGE_SIZE){
+            //TODO : gérer le cas d'un message trop long
+        }
+    }
 
+    const string& getSender() const { return sender; }
+    const string& getReceiver() const { return receiver; }
+    const string& getText() const { return text; }
 };

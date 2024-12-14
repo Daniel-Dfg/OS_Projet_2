@@ -22,8 +22,8 @@ private:
 
     static int server_fd;
     static std::vector<pollfd> poll_fds;
-    static unordered_map<const char *, int> name_to_fd;
-    static unordered_map<int, const char *> fd_to_name;
+    static unordered_map<string, int> name_to_fd;
+    static unordered_map<int, string> fd_to_name;
     static std::queue<Message> message_queue;
     static bool running;
 
@@ -34,7 +34,7 @@ private:
 public:
 
     static void start(int port);
-    static void sendMessage(const char* receiver, const Message& msg);
+    static void sendMessage(const string receiver, const Message& msg);
     static void run();
     static void stop();
 };

@@ -61,17 +61,16 @@ void Server::handleNewConnection() {
 
 
     // Lire le premier message envoyé par le client (censé être le pseudo)
-    // A CHANGER. ligne de code barbare
+    // A CHANGER. ligne de code barbare, et ne vérifie pas si le pseudo du client est trop long...
 
-    char buffer[20];
+    char buffer[30];
     int bytes_received = check_return_value(read(client_fd, buffer, sizeof(buffer) - 1), "lecture pseudo");
     buffer[bytes_received] = '\0'; // c'est le client qui devras s'occuper d'envoyer des messages sous forme correcte, donc devras retirer le "-1" plus haut et le "\0"
 
-    char* client_name = new char[bytes_received + 1];
-    std::strcpy(client_name, buffer);
+    string client_name(buffer, bytes_received);
 
 
-    // Permet de surveillé si il y a un évenment disponible sur la socket du client, push dans le pool des truc à surveillé
+    // Permet de surveiller si il y a un événment disponible sur la socket du client, push dans le pool des truc à surveillé
     pollfd client_pollfd = {
         .fd = client_fd,
         .events = POLLIN,
@@ -101,14 +100,14 @@ void Server::handleClientMessage(int client_fd) {
         return;
     }
     std::cout << "Message reçu : " << buffer << std::endl;
-    const char *sender = fd_to_name[client_fd];
+    const string sender = fd_to_name[client_fd];
     //Message msg(buffer, bytes);
     Message msg(sender, buffer); //FIX : tableau de char à la place de string
     message_queue.push(msg);
 }
 
 void Server::handleDisconnection(int client_fd) {
-    const char* name = fd_to_name[client_fd];
+    const string name = fd_to_name[client_fd];
 
     name_to_fd.erase(name);
     fd_to_name.erase(client_fd);
@@ -131,13 +130,13 @@ void Server::start(int port) {
     std::cout << "Serveur démarré sur le port " << port << std::endl;
 }
 
-void Server::sendMessage(const char* receiver, const Message& msg) {
+void Server::sendMessage(const string receiver, const Message& msg) {
     // /!\ l'argument 'message' était avant la modification une RValue ici, pas sûr que notre programme final fonctionne comme ça. À vérifier.
     //it = (client, fd)
 
     if (auto it = name_to_fd.find(receiver); it != name_to_fd.end()) {
         check_return_value(
-            write(it->second, msg.getText(), strlen(msg.getText())),
+            write(it->second, msg.getText().c_str(), sizeof(msg.getText())),
             "écriture au client"
         );
     }
