@@ -13,22 +13,20 @@ inline int check_return_value(int value, string elem = "???") {
 }
 
 class Message {
-  string sender, receiver, text;
-  ssize_t size;
+private:
+    const char* sender;   
+    const char* receiver;  
+    const char* text;     
 
 public:
-  Message(string &sender_, string &text) {
-    this->sender = sender_;
-    std::stringstream ss(text);
-    if (getline(ss, receiver, ' ') && getline(ss, text)) {
-      this->size = this->text.length();
-    } else {
-      // Traitement pour message invalide...
-    }
-  }
-  Message() {}
-  string getSender() const { return sender; }
-  string getReceiver() const { return receiver; }
-  string getText() const { return text; }
-  bool isEmpty() const {return text == "";}
+
+    Message(const char* sender_, const char* raw_text)
+        : sender(sender_), text(raw_text) {}
+// devrais crée une méthode ici pour récuperer le destinataire, car les méthodes précédente ne marche que sur les string
+
+    const char* getSender() const { return sender; }
+    const char* getReceiver() const { return receiver; }
+    const char* getText() const { return text; }
 };
+
+
