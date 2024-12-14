@@ -4,9 +4,12 @@
 #include <thread>
 #include <atomic>
 #include "SignalManager.hpp"
+#include <queue>
+
 
 class Client {
 public:
+
     Client(std::string name_,bool modManuel,bool modBot,std::string addressIp, int port);
     int Connect();
     void SendMessage();
@@ -23,7 +26,6 @@ private:
     std::string addressIP_;
     int port_;
     int socket_; // Socket TCP-IPv4
-    struct sockaddr_in serv_addr_;
 
     std::thread readThread_;
     std::atomic<bool> connected{false};

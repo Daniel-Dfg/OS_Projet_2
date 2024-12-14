@@ -1,10 +1,17 @@
-#include <arpa/inet.h>
+#pragma once
+// TODO A RECHOISIR les include, (NECESSAIRE PENDANT LA FUSION)
 #include <iostream>
-#include <netinet/in.h>
 #include <string>
-#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <string>
 #include <sys/types.h>
+#include <poll.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 #include <unistd.h>
+#include <thread>
+#include <queue>
+
 using std::string;
 
 inline int check_return_value(int value, string elem = "???") {
@@ -16,9 +23,30 @@ inline int check_return_value(int value, string elem = "???") {
 }
 
 class Message {
-public:
-  size_t length;
-  std::string text;
+private:
+    static int constexpr MAX_MESSAGE_SIZE = 1024;
+    string sender;
+    string receiver;
+    string text;
 
-  Message(const std::string &t = "") : text(t), length(t.length()) {}
+public:
+    Message(const string& sender_, const string& raw_text)
+            : sender(sender_), text(raw_text) {
+      size_t pos = raw_text.find(" ");
+      if (pos != string::npos) {
+        receiver = raw_text.substr(0, pos);
+        text = raw_text.substr(pos + 1);
+      }
+      else {
+        //TODO : gérer le cas d'un message au format incorrect.
+      }
+
+      if(sizeof(text) > MAX_MESSAGE_SIZE){
+        //TODO : gérer le cas d'un message trop long
+      }
+    }
+
+    const string& getSender() const { return sender; }
+    const string& getReceiver() const { return receiver; }
+    const string& getText() const { return text; }
 };
