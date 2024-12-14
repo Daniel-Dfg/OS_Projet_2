@@ -1,54 +1,64 @@
 #include "SetUp.hpp"
 
 
-static void SetNickName(char* nick,bool bot) {
-    std::string newNick ="";
-    if (bot) newNick="["+std::string(nick)+"]";
-    else newNick="\x1B[4m["+std::string(nick)+"]\x1B[0m";
-    strncpy(nick, newNick.c_str(), strlen(nick));
-};
+static void SetNickName(std::string& nick, bool bot) {
+    if (bot) nick = "[" + std::string(nick) + "]";
+    else nick = "\x1B[4m[" + std::string(nick) + "]\x1B[0m";
+}
 
-// TODO : A REFAIRE COMPLETEMENT
-static char* VerifyEntries(int argc, char* argv[]) {
-    char* name;
 
+static void VerifyEntries(int argc, char *argv[],OptionsProgramme *opt,std::string& name) {
     if (argc < 2) {
         fputs("chat pseudo_utilisateur [--bot] [--manuel]\n", stderr);
         exit(CODE_RETOUR_PARAMETRES_MANQUANTS);
     }
 
-    if (strlen(argv[1]) > MAX_PSEUDO_DESTINATAIRE || strlen(argv[2]) > MAX_PSEUDO_DESTINATAIRE) {
-        fprintf(stderr, "La longueur des pseudonymes ne peut excéder %d caractères.\n", MAX_PSEUDO_DESTINATAIRE);
+    const std::string charsInterdits = "/[]-";
+    int index = 1;
+    name += argv[1];
+    index++;
+
+    while (argv[index][0] != '-' && index<<argc) {
+        name += ' ';
+        name += argv[index];
+        index++;
+    }
+    if (name.length() > MAX_PSEUDO ) {
+        fprintf(stderr, "La longueur des pseudonymes ne peut excéder %d caractères.\n", MAX_PSEUDO);
         exit(CODE_RETOUR_PSEUDO_TROP_LONG);
     }
 
-    const char caracteresInterdits[] = { '/', '-', '[', ']' };
-
-    for (int i = 1; i < 3; ++i) {
-        for (unsigned int j = 0; j < sizeof(caracteresInterdits) / sizeof(*caracteresInterdits); ++j) {
-            if (strchr(argv[i], caracteresInterdits[j]) != NULL) {
-                fprintf(stderr, "Le caractère '%c' n'est pas autorisé dans un pseudonyme.\n", caracteresInterdits[j]);
-                exit(CODE_RETOUR_PSEUDO_CARACTERES_INVALIDES);
-            }
+    for (const char &c: charsInterdits) {
+        if (name.find(c) != std::string::npos) {
+            fprintf(stderr, "Erreur : Le pseudonyme ne peut pas contenir des caractères interdits (/ ou [ ou ] ou -)\n");
+            exit(CODE_RETOUR_PSEUDO_CARACTERES_INVALIDES);
         }
     }
-    return name;
+
+    std::string firstParam = (argc > index) ? argv[index] : "";
+    std::string secondParam = (argc > index+1) ? argv[index+1] : "";
+    opt->isBot = (firstParam == "--bot" || secondParam == "--bot");
+    opt->isManuel = (firstParam == "--manuel" || secondParam == "--manuel");
+
 }
 
+static void SetIpAndPort(std::string &ip, int &port) {
+    const char *ipEnv = std::getenv("IP_SERVEUR");
+    const char *portEnv = std::getenv("PORT_SERVEUR");
+    int portValue = std::stoi(portEnv);
+    if (ipEnv!= nullptr) { // TODO checker si respecte le format IPv4
+        ip = ipEnv;
+    }
+    if (portEnv != nullptr && portValue>=1 && portValue<=65535) {
+        port=portValue;
+    }
+}
 
+void SetUp(int argc, char *argv[], std::string &IP, int &PORT, OptionsProgramme *options) {
+    std::string nick;
+    VerifyEntries(argc, argv, options,nick);
+    SetNickName(nick, options->isBot);
+    SetIpAndPort(IP,PORT);
 
-
-// TODO : A REFAIRE COMPLETEMENT
-void SetUp(int argc, char* argv[]) {
-    const char* ipServer = std::getenv("IP_SERVEUR");
-    const char* portServer = std::getenv("PORT_SERVEUR");
-    char* name;
-    std::string firstParam = (argc > 3) ? argv[3] : "";
-    std::string secondParam = (argc > 4) ? argv[4] : "";
-    bool isBot = (firstParam == "--bot" || secondParam == "--bot");
-    bool isManuel = (firstParam == "--manuel" || secondParam == "--manuel");
-
-    name = VerifyEntries(argc, argv);
-    SetNickName(name,isBot);
 }
 
