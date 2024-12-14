@@ -1,5 +1,8 @@
 #include "SignalManager.hpp"
 
+bool SignalManager::clientConnected=false;
+bool SignalManager::showMemory=false;
+
 // Initialise la gestion des signaux pour le programme
 void SignalManager::initSignalHandling(bool manuel) {
     struct sigaction sa{};  // Structure pour configurer les actions des signaux

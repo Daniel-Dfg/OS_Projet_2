@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
+#include "codeserreurs.hpp"
 #define MAX_PSEUDO 30
-#include "SignalManager.hpp"
 
 typedef struct {
     bool isBot;

@@ -3,15 +3,7 @@
 
 #include <csignal>
 #include <iostream>
-
-enum {
-    CODE_RETOUR_NORMAL,
-    CODE_RETOUR_PARAMETRES_MANQUANTS,
-    CODE_RETOUR_PSEUDO_TROP_LONG,
-    CODE_RETOUR_PSEUDO_CARACTERES_INVALIDES,
-    CODE_RETOUR_ARRET_SIGINT,
-    CODE_RETOUR_ERREUR_AUTRE
-};
+#include "codeserreurs.hpp"
 
 // Classe SignalManager
 // Gère les signaux système pour contrôler le comportement du programme
@@ -30,7 +22,5 @@ public:
     static bool showMemory;
 };
 
-bool SignalManager::clientConnected=false;
-bool SignalManager::showMemory=false;
 
 #endif //PROJETOS_SIGNALMANAGER_HPP
