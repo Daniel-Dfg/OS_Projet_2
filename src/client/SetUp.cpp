@@ -1,10 +1,6 @@
 #include "SetUp.hpp"
 
 
-static void SetNickName(std::string& nick, bool bot) {
-    if (bot) nick = "[" + std::string(nick) + "]";
-    else nick = "\x1B[4m[" + std::string(nick) + "]\x1B[0m";
-}
 
 // TODO : Faites de même si le pseudo est « . » ou « .. ».
 static void VerifyEntries(int argc, char *argv[],OptionsProgramme *opt,std::string& name) {
@@ -51,11 +47,8 @@ static void SetIpAndPort(std::string &ip, int &port) {
     }
 }
 
-void SetUp(int argc, char *argv[],std::string& name, std::string &IP, int &PORT, OptionsProgramme *options,std::string& realname) {
+void SetUp(int argc, char *argv[],std::string& name, std::string &IP, int &PORT, OptionsProgramme *options) {
     VerifyEntries(argc, argv, options,name);
-    realname=name;
-    SetNickName(name, options->isBot);
     SetIpAndPort(IP,PORT);
-
 }
 
