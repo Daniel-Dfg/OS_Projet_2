@@ -62,7 +62,7 @@ void Client::SendMessage() {
             // Utilisation send plutôt que write pour les options(flags), potentiellement nécessaire ultérieurement
             ssize_t bytesSent = send(socket_,message.c_str(),message.size(),0);
             if (bytesSent<0) {
-                std::cerr<<"Erreur d'envoi\n";
+                std::cerr<<"Erreur d'envoi \n";
                 connected= false;
             }
         }
