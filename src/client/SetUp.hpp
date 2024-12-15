@@ -14,6 +14,6 @@ typedef struct {
 } OptionsProgramme;
 
 
-void SetUp(int argc, char* argv[],std::string& name,std::string &IP,int &PORT, OptionsProgramme* options,std::string& realname);
+void SetUp(int argc, char* argv[],std::string& name,std::string &IP,int &PORT, OptionsProgramme* options);
 
 #endif //PROJETOS_SETUP_HPP

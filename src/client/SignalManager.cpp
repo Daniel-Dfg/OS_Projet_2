@@ -36,10 +36,14 @@ void SignalManager::signalHandler(int signalSent) {
 
 // Gestionnaire de signaux pour le mode manuel
 void SignalManager::signalHandlerManuel(int signalSent) {
-    if (signalSent == SIGINT && clientConnected) {
-        /*Si la connexion a été établie et que l’option --manuel est activée, alors la réception du
-        signal SIGINT par le thread d’origine doit désormais afficher les messages en attente
-        conservés en mémoire*/
-        showMemory = true;
+    if (signalSent == SIGINT) {
+        if (clientConnected) {
+            /*Si la connexion a été établie et que l’option --manuel est activée, alors la réception du
+         signal SIGINT par le thread d’origine doit désormais afficher les messages en attente
+         conservés en mémoire*/
+            showMemory = true;
+        } else {
+            exit(CODE_RETOUR_ARRET_SIGINT);
+        }
     }
 }
