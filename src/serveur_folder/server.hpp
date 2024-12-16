@@ -27,7 +27,7 @@ private:
     static std::queue<Message> message_queue;
     static bool running;
 
-    static void init(int port = 8080);
+    static void init(int port = 1234);
     static void handleNewConnection();
     static void handleClientMessage(int client_fd);
     static void handleDisconnection(int client_fd);
