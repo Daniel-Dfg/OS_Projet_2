@@ -1,5 +1,6 @@
 #ifndef PROJETOS_CLIENT_HPP
 #define PROJETOS_CLIENT_HPP
+
 #include "commons.hpp"
 #include <thread>
 #include <atomic>
@@ -12,7 +13,7 @@
 class Client {
 public:
     Client(std::string name_,bool modManuel,bool modBot,std::string addressIp, int port);
-    int Connect();
+    void Connect();
     void SendMessage();
     void ReceiveMessage();
     void DisplayMessage(const char* message);
@@ -32,11 +33,13 @@ private:
     std::string addressIP_;
     int port_;
     int socket_; // Socket TCP-IPv4
+    std::atomic<bool> connected{false};
 
-    // Thread lecture et gestion des signaux
+    // Thread lecture, mutex et gestion des signaux
+    std::mutex memoryMutex; // Empêcher les accès concurrents à la mémoire
+    std::mutex displayMutex; // Empêcher les accès concurrents lors de l'affichage
     pthread_t mainThreadID;
     std::thread readThread_; // Identifié au méthode ReceiveMessage()
-    std::atomic<bool> connected{false};
     SignalManager signalManager;
 };
 

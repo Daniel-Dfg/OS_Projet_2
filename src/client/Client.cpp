@@ -16,13 +16,12 @@ Client::Client(std::string name, bool modManuel, bool modBot, std::string addres
 }
 
 
-int Client::Connect() {
+void Client::Connect() {
     struct sockaddr_in serv_addr;
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(port_);
     check_return_value(inet_pton(AF_INET, addressIP_.c_str(), &serv_addr.sin_addr), "inet ");
 
-    // TODO revoir les cas d'échecs avec l'énoncé et les valeurs de retour
     std::cout << "Connexion au server ...\n";
     while (1) {
         if (connect(socket_, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) == 0) {
@@ -48,42 +47,44 @@ int Client::Connect() {
     // Envoyer le nom au serveur
     std::string nametosend = name_;
     std::replace(nametosend.begin(), nametosend.end(), ' ', '-');
-    ssize_t bytes = write(socket_, nametosend.c_str(), nametosend.length());
+    check_return_value(write(socket_, nametosend.c_str(), nametosend.length()));
 
     SetNickName(name_);
 
-    if (bytes < 0) { // TODO
-        exit(1);
-    }
     SendMessage();
-    return CODE_RETOUR_NORMAL; // TODO A REVOIR
 }
 
 
 void Client::SendMessage() {
+    size_t space;
+    std::string message;
     while (connected) {
         if (signalManager.showMemory) DisplayMemory();
-
-        std::string message;
+        message.clear();
         getline(std::cin, message);
-        size_t space = message.find(' ');
-        std::string onlyText = message.substr(space + 1);
-        // TODO A VERIFIER
-        /*
-        if (std::cin.eof()) {
-            connected = false;
-            break;
-        }*/
-        if (std::cin.fail()) { // Ctrl+C
-            std::cin.clear();
+
+        if (std::cin.fail()) {
+            if (signalManager.showMemory) std::cin.clear();// Ctrl+C declenché
+            else {
+                Disconnect();
+                break;
+            }
         }
-        if (size(onlyText) < 1024) { // Si le message ne dépasse pas les 1024 octets
+        space = message.find(' ');
+        std::string onlyText = message.substr(space + 1);
+
+        // Si le message ne dépasse pas les 1024 octets et contient au minimum un espace
+        if (size(onlyText) < 8024 && space != std::string::npos) {
+            if (!modBot_) {
+                std::lock_guard<std::mutex> lock(displayMutex);
+                std::cout << name_ << " : " << onlyText << "\n";
+            }
+            DisplayMemory();
             // Utilisation send plutôt que write pour les options(flags), potentiellement nécessaire ultérieurement
-            if (!modBot_) std::cout << name_ << " : " << onlyText << "\n";
             ssize_t bytesSent = send(socket_, message.c_str(), message.size(), 0);
             if (bytesSent < 0) {
                 std::cerr << "Erreur d'envoi\n";
-                connected = false;
+                exit(CODE_RETOUR_ERREUR_AUTRE);
             }
         }
     }
@@ -99,25 +100,25 @@ void Client::ReceiveMessage() {
         sigaddset(&set, SIGINT);
         pthread_sigmask(SIG_BLOCK, &set, nullptr);
     }
-
     // Utilisation recv plutôt que read pour les options(flags), potentiellement nécessaire ultérieurement
     while (connected) {
         ssize_t bytesReceived;
         bytesReceived = recv(socket_, buffer, sizeof(buffer) - 1, 0);
 
         if (bytesReceived > 0) { // Message bien reçu
-            buffer[bytesReceived] = '\0';
+            buffer[bytesReceived] = '\n';
             if (modManuel_) {
-                std::cout << "\a" << std::endl; //std::cout<<(strlen(buffer)+size(memory_))<<std::endl;
+                std::cout << "\a";
+                std::flush(std::cout);
 
                 if ((strlen(buffer) + size(memory_)) < MAX_MEMOIRE) { // Ajouter à la mémoire
+                    std::lock_guard<std::mutex> lock(memoryMutex);
                     memory_ += buffer;
                     std::memset(buffer, 0, strlen(buffer)); // Nettoyer le buffer
                 } else { // Mémoire remplie := Afficher
                     DisplayMemory();
                     DisplayMessage(buffer);
                 }
-
             } else { // Cas classique sans mode manuel
                 DisplayMessage(buffer);
             }
@@ -125,13 +126,15 @@ void Client::ReceiveMessage() {
             connected = false;
             pthread_kill(mainThreadID, SIGINT);
         } else { // Erreur
-            std::cerr << "erreur"; // TODO
+            std::cerr << "Erreur réception de message";
+            exit(CODE_RETOUR_ERREUR_AUTRE);
         }
     }
 }
 
 
 void Client::DisplayMessage(const char *buffer) {
+    std::lock_guard<std::mutex> lock(displayMutex);
     std::string name;
     std::string message;
 
@@ -146,13 +149,14 @@ void Client::DisplayMessage(const char *buffer) {
 
 
 void Client::DisplayMemory() {
+    std::lock_guard<std::mutex> lock(memoryMutex);
     std::istringstream stream(memory_); // Crée un flux pour lire la mémoire
     std::string singleMessage;
 
     while (std::getline(stream, singleMessage)) {
         DisplayMessage(singleMessage.c_str());
     }
-    memory_ = "";
+    memory_.clear();
     signalManager.showMemory = false;
 }
 
@@ -167,8 +171,9 @@ void Client::Disconnect() {
     if (connected) {
         connected = false;
     }
-    if (readThread_.joinable()) readThread_.join();
+    shutdown(socket_, SHUT_RDWR); // Signale la fermeture des canaux
     close(socket_);
+    if (readThread_.joinable()) readThread_.join();
 }
 
 

@@ -15,20 +15,22 @@ void SignalManager::initSignalHandling(bool manuel) {
     sa.sa_flags = 0;           // Aucun drapeau supplémentaire
 
     // Associe les signaux aux gestionnaires
-    sigaction(SIGINT, &sa, nullptr);   // Gère l'interruption (Ctrl+C)
+    sigaction(SIGINT, &sa, nullptr);
+    sigaction(SIGPIPE, &sa, nullptr);// Gère l'interruption (Ctrl+C)
     sigaction(SIGUSR1, &sa, nullptr);  // Signal personalisé qui indique la fin du programme
     sigaction(SIGHUP, &sa, nullptr);  // Si l'on quitte le terminal
 }
 
 // Gestionnaire de signaux pour le mode normal
 void SignalManager::signalHandler(int signalSent) {
-    if (signalSent == SIGINT) {
+    if (signalSent == SIGINT || signalSent == SIGPIPE) {
         if (!clientConnected) {
             /*Tant que la connexion (fonction connect()) n’a pas été établie, le signal SIGINT doit
             terminer proprement chat (et donc à la fois le processus d’origine et le second) avec le
             code de retour 4 */
             exit(CODE_RETOUR_ARRET_SIGINT);
         } else {
+            clientConnected= false;
             exit(CODE_RETOUR_NORMAL);
         }
     }
@@ -38,12 +40,12 @@ void SignalManager::signalHandler(int signalSent) {
 void SignalManager::signalHandlerManuel(int signalSent) {
     if (signalSent == SIGINT) {
         if (clientConnected) {
-            /*Si la connexion a été établie et que l’option --manuel est activée, alors la réception du
-         signal SIGINT par le thread d’origine doit désormais afficher les messages en attente
-         conservés en mémoire*/
             showMemory = true;
         } else {
             exit(CODE_RETOUR_ARRET_SIGINT);
         }
+    }
+    else if (signalSent == SIGPIPE){
+        clientConnected= false;
     }
 }
