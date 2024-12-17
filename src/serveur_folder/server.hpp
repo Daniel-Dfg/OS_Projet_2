@@ -1,5 +1,3 @@
-// Ne pas oublier de brancher le client au bon port, et de faire ./Client USERNAME, et que le client envoie directement son username
-// juste après la connection
 #pragma once
 #include <queue>
 #include <string>

@@ -74,7 +74,7 @@ void Client::SendMessage() {
         std::string onlyText = message.substr(space + 1);
 
         // Si le message ne dépasse pas les 1024 octets et contient au minimum un espace
-        if (size(onlyText) < 8024 && space != std::string::npos) {
+        if (size(onlyText) < 1024 && space != std::string::npos) {
             if (!modBot_) {
                 std::lock_guard<std::mutex> lock(displayMutex);
                 std::cout << name_ << " : " << onlyText << "\n";
@@ -106,7 +106,7 @@ void Client::ReceiveMessage() {
         bytesReceived = recv(socket_, buffer, sizeof(buffer) - 1, 0);
 
         if (bytesReceived > 0) { // Message bien reçu
-            buffer[bytesReceived] = '\n';
+            buffer[bytesReceived] = '\0';
             if (modManuel_) {
                 std::cout << "\a";
                 std::flush(std::cout);
@@ -114,7 +114,7 @@ void Client::ReceiveMessage() {
                 if ((strlen(buffer) + size(memory_)) < MAX_MEMOIRE) { // Ajouter à la mémoire
                     std::lock_guard<std::mutex> lock(memoryMutex);
                     memory_ += buffer;
-                    std::memset(buffer, 0, strlen(buffer)); // Nettoyer le buffer
+                    std::memset(buffer, 0, bytesReceived); // Nettoyer le buffer
                 } else { // Mémoire remplie := Afficher
                     DisplayMemory();
                     DisplayMessage(buffer);
@@ -171,8 +171,12 @@ void Client::Disconnect() {
     if (connected) {
         connected = false;
     }
-    shutdown(socket_, SHUT_RDWR); // Signale la fermeture des canaux
-    close(socket_);
+    if (shutdown(socket_, SHUT_RDWR) < 0) {
+        std::cerr << "Erreur lors de la fermeture de la socket\n";
+    }
+    if (close(socket_) < 0) {
+        std::cerr << "Erreur lors de la fermeture de la socket\n";
+    }
     if (readThread_.joinable()) readThread_.join();
 }
 

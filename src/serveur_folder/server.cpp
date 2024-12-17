@@ -1,5 +1,3 @@
-// Ne pas oublier de brancher le client au bon port, et de faire ./Client USERNAME, et que le client envoie directement son username
-// juste après la connection
 #include "server.hpp"
 #include <queue>
 #include <string>
@@ -82,24 +80,26 @@ void Server::handleNewConnection() {
     std::cout << "Nouveau client connecté: " << client_name << std::endl;
 }
 
-
 void Server::handleClientMessage(int client_fd) {
     //TODO : gérer les cas où le message est trop long
-    char buffer[1024];
+    const int MAX_MESSAGE_SIZE = 1024;
+    char buffer[MAX_MESSAGE_SIZE];
     int bytes = check_return_value(
         read(client_fd, buffer, sizeof(buffer)- 1),
         "lecture message client"
     );
-    buffer[bytes] = '\0'; // c'est le client qui devras s'occuper d'envoyer des messages sous forme correcte, donc devras retirer le "-1" plus haut et le "\0"
+    buffer[bytes] = '\0'; 
 
-    // read est uné operation bloquante, mais elle ne pose pas de problème car handleclientmessage est appelé uniquement quand il y a un evenment sur la socket
     if (bytes == 0) {
         handleDisconnection(client_fd);
         return;
     }
+    if (bytes > MAX_MESSAGE_SIZE) {
+        handleDisconnection(client_fd);
+        return;
+    }
     const string sender = fd_to_name[client_fd];
-    //Message msg(buffer, bytes);
-    Message msg(sender, buffer); //FIX : tableau de char à la place de string
+    Message msg(sender, buffer);
     std::cout << "Message de: " << msg.getSender() << " à envoyé à " << msg.getReceiver() << " : " << msg.getText() << std::endl;
     message_queue.push(msg);
     sendMessage(msg.getReceiver(), msg);
@@ -141,7 +141,8 @@ void Server::sendMessage(const string receiver, const Message& msg) {
     }
     else {
         //TODO : raffiner cette vérification pour déterminer si le client n'existe pas où s'il n'est juste pas connecté
-        std::cout << "Ce client n'est pas connecté ou n'existe pas (à déterminer)" << std::endl;
+        std::cout << "Cette personne n'est pas disponible" << std::endl;
+
     }
 }
 
@@ -153,7 +154,7 @@ void Server::run() {
             "poll"
         );
 
-        for (size_t i = 0; i < poll_fds.size(); i++) {  //vérification des polls (chatGPT)
+        for (size_t i = 0; i < poll_fds.size(); i++) {  //vérification des polls
             if (poll_fds[i].revents == 0) continue; // si rien ne se passe on continue la boucle
 
             if (poll_fds[i].fd == server_fd) { // si l'évenement viens de la socket principal on gère la nouvelle connexion

@@ -12,6 +12,5 @@ int main(int argc, char* argv[]) {
     SetUp(argc,argv,displayName,IP,PORT,&options);
 
     Client client(displayName,options.isManuel,options.isBot,IP,PORT);
-    std::cout<<"ok";
     return 0;
 }
