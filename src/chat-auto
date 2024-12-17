@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+
+set -e  # Arrête le script dès une erreur
+
+# Vérifie les pseudonymes,
+function verify_pseudo() {
+    local user_name="$1"
+    local bot_name="$2"
+    local max_length=6
+
+    # Vérifie si les pseudonymes sont identiques
+    if [[ "$user_name" == "$bot_name" ]]; then
+        echo "Erreur : Vous ne pouvez pas avoir le même nom que votre destinataire :( " >&2
+        return 1
+    fi
+
+    # Vérifie la longueur des pseudonymes
+    if (( ${#user_name} > max_length || ${#bot_name} > max_length )); then
+        echo "Erreur : Longueur du pseudo utilisateur/destinataire doit être inférieure ou égale à $max_length caractères" >&2
+        return 1
+    fi
+
+    return 0
+}
+
+# Vérifie les arguments et renvoie les options
+function verify_entry() {
+    local user_name=""
+    local receiver_name=""
+    local mode1=""             
+    local mode2=""             
+    local nb_args=$#
+
+    # Vérifie le nombre d'arguments
+    if [[ $nb_args -lt 1 || $nb_args -gt 4 ]]; then 
+        echo "Usage : ./chat utilisateur [destinataire] [--bot] [--manuel]" >&2
+        exit 1
+    fi
+
+    # Vérification des pseudos
+    user_name="$1"
+    if [[ $nb_args -ge 2 ]]; then
+        receiver_name="$2"
+    fi
+
+    # Vérification des modes
+    if [[ $nb_args -ge 3 ]]; then
+        mode1="$3"
+        if [[ "$mode1" != "--bot" && "$mode1" != "--manuel" ]]; then
+            echo "Erreur : les mode doit être --bot ou --manuel" >&2
+            exit 1
+        fi
+    fi
+    if [[ $nb_args -eq 4 ]]; then
+        mode2="$3"
+        mode2="$4"
+        if [[ ("$mode2" != "--bot" && "$mode2" != "--manuel") || ("$mode2" != "--bot" && "$mode2" != "--manuel") ]]; then
+            echo "Erreur : Les modes doivent être --bot ou --manuel" >&2
+            exit 1
+        fi
+    fi
+
+    # Vérifie les pseudonymes
+    if ! verify_pseudo "$user_name" "$receiver_name"; then
+        exit 1
+    fi
+
+    echo "$user_name $receiver_name $mode1 $mode2"
+}
+
+# Fonction principale de chat
+function chat() {
+    local user_name="$1"
+    local receiver_name="$2"
+    local mode1="$3"
+    local mode2="$4"
+    local chat_command="./chat $user_name"
+
+    # ajoute les options --bot et/ou --manuel si elles sont ajouté à la ligne de commande
+    if [[ -n "$mode1" ]]; then
+        chat_command="$chat_command $mode1"
+    fi
+    if [[ -n "$mode2" ]]; then
+        chat_command="$chat_command $mode1 $mode2"
+    fi
+    echo "Appuyez sur Ctrl+D pour changer de destinataire"
+
+    while true; do
+        if read -r user_message; then # Envoie le message avec le pseudo
+            echo "$receiver_name $user_message"
+        else # Si Ctrl+D détecté
+            echo "Entrez un nouveau pseudo destinataire :" >&2
+            if read -r new_user_name; then
+
+                # Vérifie si le nouveau pseudo est valide
+                if verify_pseudo "$new_user_name" "$user_name"; then
+                    receiver_name="$new_user_name"
+                    echo "Le destinataire est: $receiver_name" >&2
+                else
+                    echo "Pseudo invalide, le destinataire reste le même" >&2
+                fi
+
+            else # si on appuie 2 fois sur CTRL + D
+                echo "Deux ctrl+D detecté, fermeture du programme" >&2
+                break
+            fi
+        fi
+    done | $chat_command
+}
+
+# Fonction principale
+function main() {
+    local user_name receiver_name mode1 mode2
+    read -r user_name receiver_name mode1 mode2 < <(verify_entry "$@")
+    chat "$user_name" "$receiver_name" "$mode1" "$mode2"
+}
+
+main "$@"
+
+// TODO : eviter que le ctrl + C ferme le programme en mode manuel
