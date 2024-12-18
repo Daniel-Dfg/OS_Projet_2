@@ -2,6 +2,7 @@
 #define PROJETOS_CLIENT_HPP
 
 #include "commons.hpp"
+#include <mutex>
 #include <thread>
 #include <atomic>
 #include <cstring>
