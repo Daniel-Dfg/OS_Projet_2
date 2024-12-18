@@ -2,7 +2,7 @@
 #include <sstream>
 #include <algorithm>
 
-
+// Initialise les attributs et configure la connexion au serveur.
 Client::Client(std::string name, bool modManuel, bool modBot, std::string addressIP, int port)
         : name_(name),
           modManuel_(modManuel),
@@ -15,7 +15,7 @@ Client::Client(std::string name, bool modManuel, bool modBot, std::string addres
     Connect(); // Connexion au serveur
 }
 
-
+// Configure et établit une connexion avec le serveur
 void Client::Connect() {
     struct sockaddr_in serv_addr;
     serv_addr.sin_family = AF_INET;
@@ -39,7 +39,7 @@ void Client::Connect() {
         }
         std::this_thread::sleep_for(std::chrono::seconds(3));
     }
-
+    // Création d'un thread pour recevoir les messages du serveur
     readThread_ = std::thread(&Client::ReceiveMessage, this); // Lancement du 2e thread
     connected = true;
     signalManager.clientConnected = true;
@@ -54,7 +54,7 @@ void Client::Connect() {
     SendMessage();
 }
 
-
+// Permet au client d'envoyer des messages au serveur
 void Client::SendMessage() {
     size_t space;
     std::string message;
@@ -90,7 +90,7 @@ void Client::SendMessage() {
     }
 }
 
-
+// Réception des messages du serveur
 void Client::ReceiveMessage() {
     char buffer[1024];
     // Bloque le signal SIGINT dans le readThread_
@@ -132,7 +132,7 @@ void Client::ReceiveMessage() {
     }
 }
 
-
+// Affiche un message reçu dans la console
 void Client::DisplayMessage(const char *buffer) {
     std::lock_guard<std::mutex> lock(displayMutex);
     std::string name;
@@ -144,10 +144,10 @@ void Client::DisplayMessage(const char *buffer) {
     std::replace(name.begin(), name.end(), '-', ' ');
     SetNickName(name);
     std::getline(stream, message);
-    std::cout << name << " : " << message << std::endl;
+    std::cout << name << " :" << message << std::endl;
 }
 
-
+// Affiche la mémoire en mode manue
 void Client::DisplayMemory() {
     std::lock_guard<std::mutex> lock(memoryMutex);
     std::istringstream stream(memory_); // Crée un flux pour lire la mémoire
@@ -160,13 +160,13 @@ void Client::DisplayMemory() {
     signalManager.showMemory = false;
 }
 
-
+// Formate le pseudo (avec ou sans mode bot)
 void Client::SetNickName(std::string &nick) {
     if (modBot_) nick = "[" + std::string(nick) + "]";
     else nick = "\x1B[4m[" + std::string(nick) + "]\x1B[0m";
 }
 
-
+// Déconnecte proprement le client du serveur
 void Client::Disconnect() {
     if (connected) {
         connected = false;
@@ -180,7 +180,7 @@ void Client::Disconnect() {
     if (readThread_.joinable()) readThread_.join();
 }
 
-
+// Destructeur
 Client::~Client() {
     Disconnect();
 }

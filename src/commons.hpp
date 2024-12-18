@@ -1,4 +1,5 @@
 #pragma once
+#include <csignal>
 #include <iostream>
 #include <string>
 
@@ -12,6 +13,7 @@ inline int check_return_value(int value, string elem = "???") {
   return value;
 }
 
+
 class Message {
 private:
     static int constexpr MAX_MESSAGE_SIZE = 1024;
@@ -20,21 +22,8 @@ private:
     string text;
 
 public:
-    Message(const string& sender_, const string& raw_text)
-        : sender(sender_), text(raw_text) {
-        size_t pos = raw_text.find(" ");
-        if (pos != string::npos) {
-            receiver = raw_text.substr(0, pos);
-            text = sender + " " + raw_text.substr(pos + 1);
-        }
-        else {
-            //TODO : gérer le cas d'un message au format incorrect.
-        }
-
-        if(sizeof(text) > MAX_MESSAGE_SIZE){
-            //TODO : gérer le cas d'un message trop long
-        }
-    }
+    Message(const string& sender_, const string& receiver_ ,const string& raw_text)
+        : sender(sender_), receiver{receiver_}, text(raw_text) {}
 
     const string& getSender() const { return sender; }
     const string& getReceiver() const { return receiver; }

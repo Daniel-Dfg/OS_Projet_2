@@ -35,4 +35,5 @@ public:
     static void sendMessage(const string receiver, const Message& msg);
     static void run();
     static void stop();
+    
 };

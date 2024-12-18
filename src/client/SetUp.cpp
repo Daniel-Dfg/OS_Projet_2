@@ -1,6 +1,5 @@
 #include "SetUp.hpp"
 
-
 static void VerifyEntries(int argc, char *argv[],OptionsProgramme *opt,std::string& name) {
     const std::string charsInterdits = "/[]-";
     int index = 1; // Index dans argv pour repérer quand le pseudo se termine et que les options commencent
