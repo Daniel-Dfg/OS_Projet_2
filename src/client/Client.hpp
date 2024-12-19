@@ -1,14 +1,18 @@
 #ifndef PROJETOS_CLIENT_HPP
 #define PROJETOS_CLIENT_HPP
 
-#include "commons.hpp"
+#include "codeserreurs.hpp"
+#include "SignalManager.hpp"
 #include <mutex>
 #include <thread>
 #include <atomic>
 #include <cstring>
-#include "SignalManager.hpp"
 #include <queue>
 #include <pthread.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+
 #define MAX_MEMOIRE 4096
 
 class Client {

@@ -144,7 +144,7 @@ void Server::handleClientMessage(int client_fd) {
     
     // Verification Si le destinataire est connecté 
     if (name_to_fd.find(receiver) == name_to_fd.end()) {
-        string error_message = "-2"; // Dois afficher erreur sur le std::cerr de l'utilisateur, géré coté client
+        string error_message = receiver; // Dois afficher erreur sur le std::cerr de l'utilisateur, géré coté client
         send(client_fd, error_message.c_str(), error_message.size(), 0);
         return;
     }

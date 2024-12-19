@@ -1,9 +1,9 @@
 #ifndef PROJETOS_SETUP_HPP
 #define PROJETOS_SETUP_HPP
+
 #include <string>
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 #include <iostream>
 #include <sstream>
 #include <arpa/inet.h> // Pour inet_pton
