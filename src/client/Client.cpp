@@ -105,7 +105,13 @@ void Client::ReceiveMessage() {
         ssize_t bytesReceived;
         bytesReceived = recv(socket_, buffer, sizeof(buffer) - 1, 0);
 
+
         if (bytesReceived > 0) { // Message bien reçu
+            if (std::strchr(buffer, ' ') == nullptr) { // Un seul mot = Utilisateur non connecté
+                DisplayMessage(buffer);
+                continue;
+            }
+
             buffer[bytesReceived] = '\0';
             if (modManuel_) {
                 std::cout << "\a";
@@ -135,6 +141,11 @@ void Client::ReceiveMessage() {
 // Affiche un message reçu dans la console
 void Client::DisplayMessage(const char *buffer) {
     std::lock_guard<std::mutex> lock(displayMutex);
+    if (std::strchr(buffer, ' ') == nullptr) {
+        std::cout << "Cette personne ("<<buffer<<") n'est pas connectée.\n";
+        return;
+    }
+
     std::string name;
     std::string message;
 

@@ -10,6 +10,7 @@ int main(int argc, char* argv[]) {
     OptionsProgramme options;
 
     SetUp(argc,argv,displayName,IP,PORT,&options);
+    std::cout<<IP<<" "<<PORT<<"\n"; // Pour débug
 
     Client client(displayName,options.isManuel,options.isBot,IP,PORT);
     return 0;
