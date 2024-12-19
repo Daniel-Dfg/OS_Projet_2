@@ -64,12 +64,21 @@ void Server::handleNewConnection() {
 
 
     // Lire le pseudo envoyé par le client (premier message automatique du client)
-        char buffer[MAX_PSEUDO_SIZE + 1];  // +1 pour la terminaison '\0'
-        int bytes_received = check_return_value(read(client_fd, buffer, sizeof(buffer) - 1), "lecture pseudo");
-        buffer[bytes_received] = '\0';  // Ajoute la terminaison à la chaîne
+    char buffer[MAX_PSEUDO_SIZE + 1];  // +1 pour la terminaison '\0'
+    int bytes_received = check_return_value(read(client_fd, buffer, sizeof(buffer) - 1), "lecture pseudo");
+    buffer[bytes_received] = '\0';  // Ajoute la terminaison à la chaîne
 
 
     string client_name(buffer);
+
+    // Vérification si le pseudo est déjà utilisé, si oui,  on déconnecte le client
+    if (name_to_fd.find(client_name) != name_to_fd.end()) {
+        std::cerr << "Pseudo déjà utilisé : " << client_name << ". Déconnexion du nouveau client.\n";
+        string error_message = "[SYTEM] Pseudo déjà utilisé. Connetez vous avec un autre pseudo.\n";
+        write(client_fd, error_message.c_str(), error_message.size());
+        close(client_fd); // Ferme la connexion pour le client ayant le pseudo en double
+        return;
+    }
 
     // Permet de surveiller si il y a un événment disponible sur la socket du client, push dans le pool des truc à surveillé
     pollfd client_pollfd = {

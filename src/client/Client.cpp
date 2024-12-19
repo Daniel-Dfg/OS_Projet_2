@@ -107,12 +107,14 @@ void Client::ReceiveMessage() {
 
 
         if (bytesReceived > 0) { // Message bien reçu
-            if (std::strchr(buffer, ' ') == nullptr) { // Un seul mot = Utilisateur non connecté
-                DisplayMessage(buffer);
-                continue;
-            }
-
+        
             buffer[bytesReceived] = '\0';
+            // Vérifie si le message indique que le pseudo est déjà utilisé
+            if (std::strcmp(buffer, "[SYSTEM] PSEUDO DEJA UTILISER, veuillez changer de pseudo") == 0) {
+                std::cerr << "Erreur : " << buffer << std::endl;
+                Disconnect(); // Déconnecte proprement le client
+                return; // Sortir de la boucle
+            }
             if (modManuel_) {
                 std::cout << "\a";
                 std::flush(std::cout);
@@ -142,7 +144,7 @@ void Client::ReceiveMessage() {
 void Client::DisplayMessage(const char *buffer) {
     std::lock_guard<std::mutex> lock(displayMutex);
     if (std::strchr(buffer, ' ') == nullptr) {
-        std::cout << "Cette personne ("<<buffer<<") n'est pas connectée.\n";
+        std::cerr << "Cette personne ("<<buffer<<") n'est pas connectée.\n";
         return;
     }
 
