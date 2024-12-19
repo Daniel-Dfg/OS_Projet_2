@@ -1,62 +1,66 @@
 #include "SetUp.hpp"
+#include <iostream>
+#include <cstdlib>
+#include <sstream>
 
-static void VerifyEntries(int argc, char *argv[],OptionsProgramme *opt,std::string& name) {
+static void VerifyEntries(int argc, char *argv[], OptionsProgramme *opt, std::string &name) {
     const std::string charsInterdits = "/[]-";
     int index = 1; // Index dans argv pour repérer quand le pseudo se termine et que les options commencent
 
     if (argc < 2) {
-        fputs("chat pseudo_utilisateur [--bot] [--manuel]\n", stderr);
+        std::cerr << "chat pseudo_utilisateur [--bot] [--manuel]\n";
         exit(CODE_RETOUR_PARAMETRES_MANQUANTS); // Code retour 1
     }
     name += argv[index]; // Premier mot est toujours le pseudo même si c'est une option ex: --manuel
     index++;
 
-    while (index<argc && argv[index][0] != '-') { // Tant que le mot ne commence pas par un "-" on rajoute au pseudo
+    while (index < argc && argv[index][0] != '-') { // Tant que le mot ne commence pas par un "-" on rajoute au pseudo
         name += ' ';
         name += argv[index];
         index++;
     }
 
-    if (name.length() > MAX_PSEUDO ) {
-        fprintf(stderr, "La longueur des pseudonymes ne peut excéder %d caractères.\n", MAX_PSEUDO);
+    if (name.length() > MAX_PSEUDO) {
+        std::cerr << "La longueur des pseudonymes ne peut excéder " << MAX_PSEUDO << " caractères.\n";
         exit(CODE_RETOUR_PSEUDO_TROP_LONG); // Code retour 2
     }
 
-    for (const char &c: charsInterdits) {
+    for (const char &c : charsInterdits) {
         if (name.find(c) != std::string::npos) {
-            fprintf(stderr, "Erreur : Le pseudonyme ne peut pas contenir des caractères interdits (/ ou [ ou ] ou -)\n");
+            std::cerr << "Erreur : Le pseudonyme ne peut pas contenir des caractères interdits (/ ou [ ou ] ou -)\n";
             exit(CODE_RETOUR_PSEUDO_CARACTERES_INVALIDES); // Code retour 3
         }
-        if (name=="." || name == "..") {
-            fprintf(stderr, "Erreur : Le pseudonyme ne peut pas être '.' ou '..' \n");
+        if (name == "." || name == "..") {
+            std::cerr << "Erreur : Le pseudonyme ne peut pas être '.' ou '..' \n";
             exit(CODE_RETOUR_PSEUDO_CARACTERES_INVALIDES); // Code retour 3
         }
     }
     std::string firstParam = (argc > index) ? argv[index] : "";
-    std::string secondParam = (argc > index+1) ? argv[index+1] : "";
+    std::string secondParam = (argc > index + 1) ? argv[index + 1] : "";
     opt->isBot = (firstParam == "--bot" || secondParam == "--bot");
     opt->isManuel = (firstParam == "--manuel" || secondParam == "--manuel");
 }
 
-
 static void SetIpAndPort(std::string &ip, int &port) {
     const char *ipEnv = std::getenv("IP_SERVEUR");
     const char *portEnv = std::getenv("PORT_SERVEUR");
-    if (ipEnv!= nullptr) {
+    if (ipEnv != nullptr) {
         struct in_addr addr;
         if (inet_pton(AF_INET, ipEnv, &addr) == 1) {
             ip = ipEnv;
         }
     }
     if (portEnv != nullptr) {
-        int portValue = std::stoi(portEnv);
-        if (portValue>=1 && portValue<=65535) port=portValue;
+        try {
+            int portValue = std::stoi(portEnv);
+            if (portValue >= 1 && portValue <= 65535) port = portValue;
+        } catch (const std::exception &e) {
+            // Ignorer les erreurs de conversion
+        }
     }
 }
 
-
-void SetUp(int argc, char *argv[],std::string& name, std::string &IP, int &PORT, OptionsProgramme *options) {
-    VerifyEntries(argc, argv, options,name);
-    SetIpAndPort(IP,PORT);
+void SetUp(int argc, char *argv[], std::string &name, std::string &IP, int &PORT, OptionsProgramme *options) {
+    VerifyEntries(argc, argv, options, name);
+    SetIpAndPort(IP, PORT);
 }
-

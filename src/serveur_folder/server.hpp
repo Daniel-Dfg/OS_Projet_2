@@ -1,6 +1,5 @@
 #pragma once
 #include <queue>
-#include <string>
 #include <sys/types.h>
 #include <poll.h>
 #include <unordered_map>
@@ -9,7 +8,9 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <cstring> // Pour strlen
-
+#include <queue>
+#include <poll.h>
+#include <signal.h>
 //#include <signal.h>
 
 using std::string, std::unordered_map;

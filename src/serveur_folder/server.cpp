@@ -1,16 +1,6 @@
 // TODO : Vérifier/refaire Gestionnaire de signaux
 // TODO : Faire handlemessage connexion en 2 fonction
 #include "server.hpp"
-#include <queue>
-#include <string>
-#include <sys/types.h>
-#include <poll.h>
-#include "../commons.hpp"
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <signal.h>
-
 using std::string;
 
 // A enlevé selon les implementations, définition des variables statiques
@@ -144,7 +134,7 @@ void Server::handleClientMessage(int client_fd) {
     
     // Verification Si le destinataire est connecté 
     if (name_to_fd.find(receiver) == name_to_fd.end()) {
-        string error_message = "-2"; // Dois afficher erreur sur le std::cerr de l'utilisateur, géré coté client
+        string error_message = receiver; // Dois afficher erreur sur le std::cerr de l'utilisateur, géré coté client
         send(client_fd, error_message.c_str(), error_message.size(), 0);
         return;
     }
@@ -185,16 +175,27 @@ void Server::start(int port) {
 
 // Envoie un message au client destinataire
 void Server::sendMessage(const string receiver, const Message& msg) {
-
-    if (auto it = name_to_fd.find(receiver); it != name_to_fd.end()) {
-        check_return_value(
-            write(it->second, msg.getText().c_str(), msg.getText().size()),
-            "écriture au client"
-        );
-    }
-    else {
-        std::cerr << "Cette personne n'est pas disponible\n"; // Affiché coté serveur
-    }
+    auto it = name_to_fd.find(receiver);
+    if (it != name_to_fd.end()) {
+        ssize_t bytesSent = write(it->second, msg.getText().c_str(), msg.getText().size());
+        if (bytesSent == -1) {
+                // Erreur critique par exemple buffer de reception plein
+                std::cerr << "Erreur  lors de l'envoi à " << receiver << ". Déconnexion...\n";
+                handleDisconnection(it->second);
+            }
+        else {
+            std::cout << "Message envoyé à " << receiver << " : " << msg.getText() << std::endl;
+        }
+    } else {
+        // On envoie un message à l'expediteur que l'utilisateur à qui il a envoyé le message n'est pas connecté
+        std::cerr << "Cette personne (" << receiver << ") n'est pas disponible.\n"; // affichage coté serveur
+        auto sender_fd = name_to_fd[msg.getSender()];
+        string error_message = receiver;
+        if (write(sender_fd, error_message.c_str(), error_message.size()) == -1) {
+            std::cerr << "Impossible d'envoyer un message d'erreur à l'expéditeur.\n";
+            handleDisconnection(sender_fd);
+        }
+        }
 }
 
 // Boucle principale du serveur
@@ -238,7 +239,7 @@ void Server::stop() {
     }
     poll_fds.clear();
     std::cerr << "Serveur arrêté proprement.\n";
-    exit;
+    exit(EXIT_SUCCESS);
 }
 
 int main() {
