@@ -181,12 +181,12 @@ void Client::SetNickName(std::string &nick) {
 void Client::Disconnect() {
     if (connected) {
         connected = false;
-    }
-    if (shutdown(socket_, SHUT_RDWR) < 0) {
-        std::cerr << "Erreur lors de la fermeture de la socket\n";
-    }
-    if (close(socket_) < 0) {
-        std::cerr << "Erreur lors de la fermeture de la socket\n";
+        if (shutdown(socket_, SHUT_RDWR) < 0) {
+            std::cerr << "Erreur shutdown\n";
+        }
+        if (close(socket_) < 0) {
+            std::cerr << "Erreur lors de la fermeture de la socket\n";
+        }
     }
     if (readThread_.joinable()) readThread_.join();
 }
