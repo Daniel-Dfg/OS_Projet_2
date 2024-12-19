@@ -44,15 +44,13 @@
 \noindent Or, dans le cadre du projet présenté ici, ces éléments apportent une pluvalue non négligeable en permettant de structurer un code de façon plus fine qu'en C ou de simplifier grandement certaines opérations. L'exemple le plus trivial qu'on peut donner de ceci est le passage de paramètres par référence plutôt que par pointeur dans certaines fonctions, qui permet une gestion plus sûre de la mémoire.
 
 \subsection*{Des librairies qui fournissent des abstractions utiles pour ce projet}
-\noindent On va illustrer ce point en parlant des \textit{threads}. En langage C, on utilisera \texttt{pthread.h} \cite{pthread.h} pour les gérer, alors qu'en C++ on a par exemple accès à la librarie standard \texttt{std::thread} \cite{std::thread}, qui permet d'abstraire certaines opérations de la librarie en C (par exemple, accéder au thread courant avec \texttt{std::this\_thread} \cite{std::thread}).
+\noindent On va illustrer ce point en parlant des \textit{threads}. En langage C, on utilisera \texttt{pthread.h} \cite{pthread.h} pour les gérer, alors qu'en C++ on a par exemple accès à la librairie standard \texttt{std::thread} \cite{std::thread}, qui permet d'abstraire certaines opérations de la librairie en C (par exemple, accéder au thread courant avec \texttt{std::this\_thread} \cite{std::thread}).
 
-\noindent Utiliser C++ permet donc l'usage de certaines libraries standard absentes en C qui permettent d'abstraire des opérations de libraries \textit{correspondantes} en C.
+\noindent Utiliser C++ permet donc l'usage de certaines librairies standard absentes en C qui permettent d'abstraire des opérations de librairies \textit{correspondantes} en C.
 
 \subsection*{Pas de perte notable à ne pas utiliser le langage C}
 \noindent C++ reste évidemment compatible avec C : il n'existe pas d'opération en C infaisable exactement de la même façon en C++ \cite{StackOverflow-C}.
-De plus, les deux langages étant connus pour leur rapidité d'exécution, la performance du C++ n'est pas dégradée de façon significative par rapport au C dans le cadre de ce projet.
-
-\noindent L'utiliser permet donc de tirer parti ses abstractions discutées plus haut (voir 2 sections précédentes) tout en gardant une très bonne efficacité.
+De plus, les deux langages étant connus pour leur rapidité d'exécution, la performance du C++ n'est pas dégradée de façon significative par rapport au C dans le cadre de ce projet. L'utiliser permet donc de tirer parti ses abstractions discutées plus haut (voir 2 sections précédentes) tout en gardant une très bonne efficacité.
 
 
 \noindent Tout ceci montre que les avantages majeurs ont été trouvés à utiliser C++ plutôt que C, alors qu’aucun avantage n’a été identifié en faveur de l’utilisation de C par rapport à C++. Ce choix du langage s’est donc naturellement imposé comme le plus adapté.
@@ -70,11 +68,12 @@ De plus, les deux langages étant connus pour leur rapidité d'exécution, la pe
 
 \noindent Cette représentation montre bien qu'un seul serveur se charge de \textit{relayer} les informations à passer d'un client à un autre ou d'un client vers lui-même (confirmation de (dé)connexion notamment). 
 
-TODO : discuter du TCP/IP brièvement \cite{TCP-IP}
-
 \noindent Dans la suite, on verra en profondeur la façon dont les sommets de ce graphe communiquent.
 
 \subsection{Choix d'implémentation communs aux clients et au serveur}
+
+\subsubsection{Du protocole de communication}
+Le choix du \textit{Transmission Control Protocol} \cite{TCP-IP} comme moyen de communication client-serveur n'était pas un "choix" à proprement parler, mais il convient de mentionner que sa mise en place a été faite en suivant globalement la méthode décrite dans la séance de Travaux Pratiques associée. \cite{TP_OS}
 
 \subsubsection{De la méthode d'envoi des messages}
 \noindent Il a été décidé d'abstraire l'échange d'informations entre les clients et le serveur principalement par une classe \texttt{Message}. Un point très important qui découle de ce choix d'implémentation est qu'on a utilisé des \texttt{std::string} \cite{std::string} pour garantir une gestion dynamique de la mémoire et simplifier les opérations de manipulation des chaînes de caractère.
@@ -120,15 +119,15 @@ Ce point fait écho à la discussion de la section précédente sur l'usage de F
 \subsubsection{De l'utilisation de \texttt{poll}}
 \texttt{poll} \cite{poll} est l'outil qui a été choisi côté serveur pour gérer les connexions et envoi de messages par les clients. Il fonctionne ainsi \cite{poll} : 
 \begin{enumerate}
-    \item Initialiser un \texttt{std::vector} de \texttt{pollfd} (descripteurs de fichier) pour gérer les communications. Chaque entrée dans ce vecteur correspond à une socket connecté au serveur, y compris la socket principal qui gère les nouvelles connexions.
+    \item Initialiser un \texttt{std::vector} de \texttt{pollfd} (descripteurs de fichier) pour gérer les communications. Chaque entrée dans ce vecteur correspond à une socket connecté au serveur, y compris le socket principal qui gère les nouvelles connexions.
     \item Pour chaque client qui se connecte au serveur, une nouvelle entrée  est ajoutée au \texttt{std::vector}. Symétriquement, ors d'une déconnexion, il faut parcourir ce vecteur pour localiser et supprimer l'entrée correspondante.
-    \item \texttt{poll} est \textit{level-triggered}, ce qui signifie que tant qu'un descripteur de fichier est prêt à être traité, l'entrée correspondante dans le vecteur seras signalée. Le serveur est donc "notifié" tant que les données sont disponibles. \cite{LevelEdgeTrigger} \cite{PollTrigger} Le serveur doit se charger de traité explicitement les évenements signalée pour évitée que ces notifications persistent. En pratique, il \textit{boucle} sur le vecteur pendant toute sa durée de vie. 
+    \item \texttt{poll} est \textit{level-triggered}, ce qui signifie que tant qu'un descripteur de fichier est prêt à être traité, l'entrée correspondante dans le vecteur seras signalée. Le serveur est donc "notifié" tant que les données sont disponibles, \cite{LevelEdgeTrigger} \cite{PollTrigger} et il doit se charger de traiter explicitement les évenements signalés pour éviter que ces notifications ne persistent indéfiniment.\\ En pratique, il \textit{boucle} sur le vecteur pendant toute sa durée de vie. 
     \item Lorsqu’un événement de lecture est détecté sur une entrée du vecteur, le serveur lis le message du client. Il traite ensuite ce message, vérifie sa validité (taille, format..), puis il recherche à qui le client expéditeur a voulu transmettre son message \footnote{En pratique, on recherche le nom du client récepteur dans un \texttt{std::unordered\_map} avec le nom du client comme clé et son \texttt{pollfd} comme valeur.} et, s'il existe, écrit dans le \texttt{pollfd} du client récepteur.
 
 
     Si le destinataire spécifié du message ne fait référence à aucun client connecté, un message d'erreur est renvoyé au client.
     Si le message à envoyer n'est pas dans le bon format, (au minimum 2 mot séparé d'un espace) le serveur ignore la requête.
-    Si le message à envoyer est plus grand que 1024 octet, le client est deconnecté.
+    Si le message à envoyer est plus grand que 1024 octets, le client est déconnecté.
 \end{enumerate}
 
 
@@ -137,11 +136,13 @@ Ce point fait écho à la discussion de la section précédente sur l'usage de F
 \texttt{epoll} \cite{epoll} fonctionne de façon assez similaire à \texttt{poll}, mais a deux différences majeures:
 \begin{enumerate}
     \item Il ne fonctionne que sur les systèmes d'exploitation Linux (ou basés sur Linux);
-    \item Il peut être \textit{edge-triggered} (une "notification" est envoyée seulement lorsque des données sont disponibles) ou \textit{level-triggered} (une "notification" est envoyée tant que des données sont disponibles). \cite{LevelEdgeTrigger}
+    \item Il peut être \textit{edge-triggered} (une "notification" est envoyée \textit{à l'instant} où des données sont disponibles) ou \textit{level-triggered} (des "notifications" sont envoyées en continu tant que des données sont disponibles). \cite{LevelEdgeTrigger}
     \item On peut aller chercher les données uniquement des \textit{file desciptors} actifs (donc : ceux qui ont reçu un message) plutôt que de devoir itérer sur l'ensemble des \textit{file descriptors} disponibles (ce qui est malheureusement nécessaire pour \texttt{poll}). \cite{EpollTrigger}
 \end{enumerate}
 
-\noindent En clair, \texttt{epoll} est cité comme une alternative plus \textit{rapide} que \texttt{poll}, mais n'a pas été implémenté dans le cadre de ce projet car l'API est plus complexe à utiliser que celle de \texttt{poll}. L'utilisation d'un mécanisme tel que \texttt{epoll} aurais été indispensable dans le cadre d'un serveur qui devais acceuilleur plus de milliers d'utilisateurs très actif, avec des tailles de données à transmettre plus importante, ou des traitements plus lourd. Cependant, l'implémentation d'epoll aurait tout à fait pu être fait en quelques jours supplémentaires cependant.
+\noindent En clair, \texttt{epoll} est cité comme une alternative plus \textit{rapide} que \texttt{poll}, mais n'a pas été implémenté dans le cadre de ce projet car l'API est plus complexe à utiliser que celle de \texttt{poll}. L'utilisation d'un mécanisme tel que \texttt{epoll} aurait certainement été indispensable dans le cadre d'un serveur qui devrait accueillir plusieurs milliers d'utilisateurs en simultané ou qui devrait transmettre des données plus volumineuses que du simple texte.
+
+Cependant, l'implémentation d'\texttt{epoll} aurait tout à fait pu être fait en quelques jours supplémentaires.
 
 \subsection{\texttt{boost::asio} comme alternative à \texttt{poll}}
 Au début du projet, nous avons utilisé \texttt{boost::asio}, une bibliothèque puissante basée sur \texttt{epoll}. Son utilisation nous a permis de mettre en place les premières grandes lignes d'un serveur fonctionnel,  ce qui a pour tout les membres de notre groupe constitué une grande opportunité d’apprentissage dans le cadre de ce projet.
@@ -150,35 +151,55 @@ Cependant, nous avons constaté que l’utilisation de \texttt{boost::asio} repr
 
 L’utilisation de \texttt{boost::asio} nous a tout de même permis d'approfondir une multitudes de concepts, tels que le fonctionnement et l'optimisation de grand serveurs, les mécanismes asynchrones, \texttt{epoll}. 
 
-En conclusion, bien que l’intégration initiale de \texttt{boost::asio} ait été partiellement abandonnée, elle a apporté des connaissances qui nous serons très utiles dans le cadre de nos futurs projets académiques ou professionnels.
+En conclusion, bien que l’intégration initiale de \texttt{boost::asio} ait été finalement abandonnée, elle a apporté des connaissances qui nous serons très utiles dans le cadre de nos futurs projets académiques ou professionnels.
 
 \subsection{Attente active pour les FIFOs côté client}
-\noindent On l'a vu en section 3.3 (\ref{Conception des clients}), tout client est séparé en deux threads dont l'un gère une FIFO pour les messages entrants et l'autre les messages sortants. Cependant, l'implémentation actuelle de ce projet fait que le contenu des FIFOs est vérifié en permanence tant que le client est connecté \footnote{On pourrait en quelque sorte parler d'\textit{attente active} de la part du client. \cite{Attente Active} }
+\noindent On l'a vu en section 3.3, tout client est séparé en deux threads dont l'un gère une FIFO pour les messages entrants et l'autre les messages sortants. Cependant, l'implémentation actuelle de ce projet fait que le contenu des FIFOs est vérifié en permanence tant que le client est connecté \footnote{On pourrait en quelque sorte parler d'\textit{attente active} de la part du client. \cite{Attente Active} }
 
 \noindent Par manque de temps, un système plus propre n'a pas pu être mis en place, mais on peut en esquisser le fonctionnement théorique (qui aurait certainement pu, comme pour \texttt{epoll}, être implémenté en quelques jours) :
 \begin{enumerate}
-    \item Initialement, la FIFO des messages entrants est vide. Dès qu'un message est envoyé au client, celui-ci commence à vider la FIFO. 
-    \item Chaque nouveau message entrant correspond à une nouvelle "notification" pour le client, à une nouvelle tâche à faire : on peut donc facilement avoir un "compteur de tâches à faire" qui indique combien de fois le client doit extraire un message de la FIFO. Par exemple, si un client reçoit 3 messages en même temps, il est censé être notifié 3 fois et donc \texttt{pop()} le premier élément de la FIFO 3 fois (ce qui vide exactement la FIFO, en principe). 
-    \item Lorsque la FIFO est vide, le client n'a pas besoin de vérifier son contenu en permanence.
+    \item Initialement, la FIFO des messages entrants est vide. Dès qu'un message est envoyé au client, celui-ci est notifié et \texttt{pop()} un élément de la FIFO pour le traiter. 
+    \item Chaque nouveau message entrant correspond à une nouvelle "notification" pour le client, à une nouvelle tâche à faire : on peut donc facilement avoir un "compteur de tâches à faire" qui indique combien de fois le client doit extraire un message de la FIFO. Ce compteur serait naturellement décrémenté dès que le client aurait fini une tâche. 
+    
+    Par exemple, si un client reçoit 3 messages en même temps, il est censé être notifié 3 fois et donc \texttt{pop()} le premier élément de la FIFO 3 fois (ce qui vide exactement la FIFO, en principe). 
+    \item Lorsque la FIFO est vide, le client a donc en théorie réalisé toutes les tâches qui lui étaient assignées et n'a par conséquent pas besoin de vérifier son contenu en permanence.
 \end{enumerate}
 
 \section{Difficultés rencontrées et solutions trouvées}
-\subsection{Problèmes de synchronisation}
+\subsection{Problèmes de synchronisation côté serveur}
+Pendant le développement, l'hypothèse selon laquelle on aurait pu faire face à des problèmes de synchronisation côté serveur (typiquement, en recevant deux messages en même temps) était bien présente. 
+
+Cependant, dans l'implémentation actuelle, on peut écarter cette possibilité puisque le serveur traite les événements de manière séquentielle, en \textit{mono-thread} grâce à \texttt{poll}, éliminant ainsi à la fois les risques d'accès concurrents et à la fois les problèmes d'ordre d'envoi et réception des messages \footnote{Comprenez : si 3 messages A, B, C sont lus dans cet ordre, alors ils seront aussi envoyés dans l'ordre A, B, C.}. Chaque événement est ainsi traité de manière séquentielle.
+
+\subsection{Asynchronie des signaux}
+Le programme présenté ici gère les signaux \texttt{SIGINT} et \texttt{SIGPIPE}. Les signaux étant asynchrones, une difficulté de ce projet était de les gérer pour :
 \begin{itemize}
-    \item côté serveur, accès concurrents (problème producteur-consommateur), 
-    coté serveur :
-    Gestion d'ordre des événements : Le serveur traite les événements de manière séquentielle, en mono-thread grâce à \texttt{poll}, éliminant ainsi à la fois les risques d'accès concurrents et à la fois les problèmes d'ordre d'envoies et réception des messages . Chaque évenements est ainsi traité de manière séquentielle.
-    \item Signaux asynchrones (mentionner la conception du SignalManager dans l'explication de la solution)
-    \item ...
+    \item éviter l'interruption inopinée d'opérations cruciales (écriture/lecture notamment)
+    \item permettre de définir les actions à exécuter en cas de réception d'un signal
+    \item garantir une \textit{communication} adéquate entre les clients et le serveur (lorsqu'un client se déconnecte, il doit pouvoir le communiquer au serveur pour que celui-ci évite de relayer des messages dans le vide)
 \end{itemize}
+
+Il a donc été décidé de centraliser la gestion des signaux dans une classe dédiée, \texttt{SignalManager}, pour laquelle on peut lister ses choix de conception les plus importants.
+\subsubsection{Différence entre le mode normal et le mode \texttt{manuel}}
+Lors de l'arrêt du programme, le signal manager prend en compte l'absence (\texttt{SignalManager::signalHandler}) ou la présence du mode \texttt{manuel} (\texttt{SignalManager::signalHandlerManuel}).
+
+\subsubsection{Masquage des signaux pour le thread récepteur côté client}
+ On en a déjà discuté dans ce rapport, mais tout client possède deux threads distincts, un pour l'envoi et un autre pour la réception de messages. Ce dernier possède un \textit{masque} qui fait qu'il ignore tous les signaux qui lui parviennent. Ce choix a été fait pour centraliser la gestion des signaux côté client dans le thread principal.
+
+\subsubsection{TODO...}
+
 
 \subsection{Garantie de l'intégrité du contenu partagé par les clients}
-\begin{itemize}
-    \item Gestion des tailles limites : Pour garantir l'intégrité du contenu partagé par les clients, nous avons imposé des limites strictes sur la taille des pseudos (maximum de 30 octets) et des messages (maximum de 1024 octets) à la fois coté client et coté serveur. En cas de dépassement de la taille du message, et que ce message parviens coté serveur malgré la protection coté client, le message est rejeté et le serveur déconnecte le client. 
-    coté client ... :
 
-    \item Fiabilité de la transmission des messages : coté serveur (à revoir) Dans le cas ou le client bug, et que le buffer de message reçu de la socket est rempli, on déconnecte le client qui bug, et on envoie à l'expediteur de ce message "erreur, ce destinataire bug"
-\end{itemize}
+\subsubsection{Gestion des tailles limites}
+
+Pour garantir l'intégrité du contenu partagé par les clients, nous avons imposé des limites strictes sur la taille des pseudos (maximum de 30 octets) et des messages (maximum de 1024 octets) à la fois coté client et coté serveur. En cas de dépassement de la taille du message, et que ce message parviens coté serveur malgré la protection coté client, le message est rejeté et le serveur déconnecte le client. 
+
+\subsubsection{Fiabilité de la transmission des messages}
+
+Malgré toutes les précautions prises pour avoir un programme \textit{safe}, il est toujours possible qu'on rencontre des cas où le client rencontre des erreurs (à cause d'un matériel défectueux, par exemple). 
+
+Ce cas d'erreur \textit{externe, indéfinie} est également géré par notre programme (du moins en partie) : si un problème de ce type est détecté, le client problématique est déconnecté et si un autre client essayait de lui envoyer des messages (qui n'arrivaient pas à destination à cause de ces fameux problèmes \textit{indéfinis}, justement), il est notifié du problème.
 
 \begin{thebibliography}{999}
     \bibitem{std::queue}
@@ -210,6 +231,9 @@ En conclusion, bien que l’intégration initiale de \texttt{boost::asio} ait é
     Wikipedia : \textit{Transmission Control Protocol} (dernière modification : 2024, 17 décembre)
 
     URL : \url{https://en.wikipedia.org/wiki/Transmission_Control_Protocol}
+
+    \bibitem{TP_OS}
+    GOOSENS J., MARKOWITCH O., cours de \textit{Systèmes d'Exploitation} (ULB), TP n°6 : Programmation réseau
 
     \bibitem{std::string} 
     C++ Programming Language : \texttt{std::string} (dernière modification : inconnu)
