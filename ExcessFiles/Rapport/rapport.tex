@@ -1,6 +1,8 @@
 \documentclass{article}
 \usepackage{graphicx} % Required for inserting images
 \usepackage{geometry}
+\usepackage[colorlinks=true, linkcolor=blue, urlcolor=blue]{hyperref}
+
  \geometry{
  a4paper,
  left=25mm,
@@ -31,14 +33,13 @@
 \pagenumbering{arabic}
 \section{Introduction}
 \noindent Ce rapport décrit globalement la conception du second projet dans le cadre du cours de Systèmes d'Exploitation
-(INFO-F201). Il présente les choix de conception qui ont guidé notre développement, et les difficultés qui ont pu survenir durant celui-ci. Pour voir de façon précise les changements ayant eu lieu tout au long du projet et la contribution de chacun, veuillez consulter \hyperref[https://github.com/Daniel-Dfg/OS_Projet_2]{le repository GitHub de notre projet}.
+(INFO-F201). Il présente les choix de conception qui ont guidé notre développement, et les difficultés qui ont pu survenir durant celui-ci. Pour voir de façon précise les changements ayant eu lieu tout au long du projet et la contribution de chacun, veuillez consulter \href{https://github.com/Daniel-Dfg/OS_Projet_2}{le repository GitHub de notre projet}.
 
 \section{Choix du langage :pourquoi C++ plutôt que C ?}
 
 \subsection*{Des outils qui facilitent le développement en général}
 \noindent Une raison fondamentale qui a guidé cette décision est que C++ possède des fonctionnalités absentes en C tels que les références, les chaînes de caractères (ou \textit{strings}, qu'on a souvent subsitués aux \texttt{char*[]}) ou encore les classes.
-
-\noindent On peut aussi parler des conteneurs STL comme \texttt{std::vector} ou \texttt{std::queue} \cite{std::queue}, très utilisés dans cette implémentation du projet.
+On peut aussi parler des conteneurs STL comme \texttt{std::vector} ou \texttt{std::queue} \cite{std::queue}, très utilisés dans cette implémentation du projet.
 
 
 \noindent Or, dans le cadre du projet présenté ici, ces éléments apportent une plus-value non négligeable en permettant de structurer un code de façon plus fine qu'en C ou de simplifier grandement certaines opérations. L'exemple le plus trivial qu'on peut donner de ceci est le passage de paramètres par référence plutôt que par pointeur dans certaines fonctions, qui permet une gestion plus sûre de la mémoire.
@@ -62,7 +63,7 @@ De plus, les deux langages étant connus pour leur rapidité d'exécution, la pe
 \noindent La structure d'un programme client-serveur tel que celui présenté ici peut être visualisée très simplement sous la forme d'un Graphe Étoile \cite{Graphe Étoile}, avec le serveur au centre et les clients aux extrémités de chaque branche.
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=0.25\linewidth]{etoile.png}
+    \includegraphics[width=0.2\linewidth]{etoile.png}
     \caption{\textit{Graphe Étoile typique.}}
 \end{figure}
 
@@ -89,11 +90,11 @@ Le choix du \textit{Transmission Control Protocol} \cite{TCP-IP} comme moyen de 
  \noindent Mais n'y a-t-il pas un risque que, si on envoie plusieurs messages simultanément à un même client, les deux messages risquent de corrompre la FIFO de réception du client (qui est un objet critique) en voulant s'insérer dedans en même temps ?
 
 
-\noindent En principe, oui, c'est un problème qui peut survenir si on ne prend pas de précaution contre lui. C'est pour cela qu'on a fait usage de mutex (ou \textit{exclusions mutelles}) \cite{std::mutex} pour protéger la FIFO de réception côté client (éviter qu'elle reçoive plusieurs messages simultanément).
+\noindent En principe, oui, c'est un problème qui peut survenir si on ne prend pas de précaution contre lui. C'est pour cela qu'on a fait usage de \textit{mutex} (ou \textit{exclusions mutelles}) \cite{std::mutex} pour protéger la FIFO de réception côté client (éviter qu'elle reçoive plusieurs messages simultanément).
 
 
 \subsubsection{Deux threads, deux FIFOs par client}
-Ce point fait écho à la discussion de la section précédente sur l'usage de FIFOs côté client.
+\noindent Ce point fait écho à la discussion de la section précédente sur l'usage de FIFOs côté client.
 
 \noindent Il faut préciser que le processus côté client se divise en deux \textit{threads}: un dédié à la réception des messages (qui doit donc vider et afficher le contenu de la FIFO de messages entrants) et un autre dédié à l'envoi de messages (qui doit donc en quelque sorte remplir la FIFO des messages à envoyer, puis la vider progressivement).
 
@@ -119,7 +120,7 @@ En cas d'erreur, un exit est provoqué avec le code d'erreur correspondant. Ceci
 \subsection{Conception du serveur}
 
 \subsubsection{De l'utilisation de \texttt{poll}}
-\texttt{poll} \cite{poll} est l'outil qui a été choisi côté serveur pour gérer les connexions et envoi de messages par les clients. Il fonctionne ainsi \cite{poll} :
+\noindent \texttt{poll} \cite{poll} est l'outil qui a été choisi côté serveur pour gérer les connexions et envoi de messages par les clients. Il fonctionne ainsi \cite{poll} :
 \begin{enumerate}
     \item Initialiser un \texttt{std::vector} de \texttt{pollfd} (descripteurs de fichier) pour gérer les communications. Chaque entrée dans ce vecteur correspond à une socket connecté au serveur, y compris le socket principal qui gère les nouvelles connexions.
     \item Pour chaque client qui se connecte au serveur, une nouvelle entrée  est ajoutée au \texttt{std::vector}. Symétriquement, ors d'une déconnexion, il faut parcourir ce vecteur pour localiser et supprimer l'entrée correspondante.
@@ -129,7 +130,7 @@ En cas d'erreur, un exit est provoqué avec le code d'erreur correspondant. Ceci
 
     Si le destinataire spécifié du message ne fait référence à aucun client connecté, un message d'erreur est renvoyé au client.
     Si le message à envoyer n'est pas dans le bon format, (au minimum 2 mot séparé d'un espace) le serveur ignore la requête.
-    Si le message à envoyer est plus grand que 1024 octets, le client est déconnecté.
+    Si le message à envoyer est plus grand que 1024 octets, le client n'est pas déconnecté : l'énoncé du projet spécifiait que le client devait être déconnecté \textit{si le serveur \textbf{recevait} un message excédant 1024 octets}, mais notre implémentation \textit{prévient} cette éventualité en n'envoyant tout simplement pas les messages trop massifs. À la place, le client est averti que son message est trop long.
 \end{enumerate}
 
 
@@ -142,18 +143,17 @@ En cas d'erreur, un exit est provoqué avec le code d'erreur correspondant. Ceci
     \item On peut aller chercher les données uniquement des \textit{file desciptors} actifs (donc : ceux qui ont reçu un message) plutôt que de devoir itérer sur l'ensemble des \textit{file descriptors} disponibles (ce qui est malheureusement nécessaire pour \texttt{poll}). \cite{EpollTrigger}
 \end{enumerate}
 
-\noindent En clair, \texttt{epoll} est cité comme une alternative plus \textit{rapide} que \texttt{poll}, mais n'a pas été implémenté dans le cadre de ce projet car l'API est plus complexe à utiliser que celle de \texttt{poll}. L'utilisation d'un mécanisme tel que \texttt{epoll} aurait certainement été indispensable dans le cadre d'un serveur qui devrait accueillir plusieurs milliers d'utilisateurs en simultané ou qui devrait transmettre des données plus volumineuses que du simple texte.
+\noindent En clair, \texttt{epoll} est cité comme une alternative plus \textit{performante} que \texttt{poll}, mais n'a pas été implémenté dans le cadre de ce projet car l'API est plus complexe à utiliser que celle de \texttt{poll}. L'utilisation d'un mécanisme tel que \texttt{epoll} aurait certainement été indispensable dans le cadre d'un serveur qui devrait accueillir plusieurs milliers d'utilisateurs en simultané ou qui devrait transmettre des données plus volumineuses que du simple texte.
 
 Cependant, l'implémentation d'\texttt{epoll} aurait tout à fait pu être fait en quelques jours supplémentaires.
 
-\subsection{\texttt{boost::asio} comme alternative à \texttt{poll}}
-Au début du projet, nous avons utilisé \texttt{boost::asio}, une bibliothèque puissante basée sur \texttt{epoll}. Son utilisation nous a permis de mettre en place les premières grandes lignes d'un serveur fonctionnel,  ce qui a pour tout les membres de notre groupe constitué une grande opportunité d’apprentissage dans le cadre de ce projet.
+\subsection{\texttt{boost::asio} comme alternative à \texttt{poll} (réf. nécessaire)}
+La première itération du programme visait à utiliser \texttt{boost::asio}, une bibliothèque puissante basée sur \texttt{epoll} qui fournissait une automatisation de certains traitements (comme la mise en place d'un \textit{thread pool} côté serveur par exemple).
 
-Cependant, nous avons constaté que l’utilisation de \texttt{boost::asio} représentait une solution qui dépasse les cadres de ce cours pour un serveur qui doit être réalisé en 2 semaines, devant gérer un maximum de 1000 connexions simultanées, et traiter des messages court. De plus, bien que très instructif, nous n’étions pas assez à l’aise avec tout les aspects et la richesse de cette bibliothèque dans le temps imparti. Cette situation nous as permis d'explorer d’autres solutions, comme \texttt{poll}, qui étaient plus adaptées dans le cadre de ce cours.
+\noindent Cependant, nous avons constaté que son utilisation représentait une solution qui dépasse le cadre de ce cours pour un serveur ayant du être réalisé en 2 semaines, ayant du gérer un nombre restreint de connexions simultanées (1000), et traiter des messages contenant uniquement du texte brut. De plus, bien que très instructif, nous n’étions pas assez à l’aise avec tout les aspects et la richesse de cette bibliothèque dans le temps imparti. Cette situation nous a permis d'explorer d’autres solutions, comme \texttt{poll}, qui étaient plus adaptées dans le cadre de ce cours.
 
-L’utilisation de \texttt{boost::asio} nous a tout de même permis d'approfondir une multitudes de concepts, tels que le fonctionnement et l'optimisation de grand serveurs, les mécanismes asynchrones, \texttt{epoll}.
+\noindent Malgré l'abandon de cette solution, l’utilisation de \texttt{boost::asio} nous a tout de même permis d'approfondir une multitudes de concepts, tels que le fonctionnement et l'optimisation de grand serveurs, les mécanismes asynchrones, \texttt{epoll}.
 
-En conclusion, bien que l’intégration initiale de \texttt{boost::asio} ait été finalement abandonnée, elle a apporté des connaissances qui nous serons très utiles dans le cadre de nos futurs projets académiques ou professionnels.
 
 \subsection{Attente active pour les FIFOs côté client}
 \noindent On l'a vu en section 3.3, tout client est séparé en deux threads dont l'un gère une FIFO pour les messages entrants et l'autre les messages sortants. Cependant, l'implémentation actuelle de ce projet fait que le contenu des FIFOs est vérifié en permanence tant que le client est connecté \footnote{On pourrait en quelque sorte parler d'\textit{attente active} de la part du client. \cite{Attente Active} }
@@ -176,9 +176,9 @@ Cependant, dans l'implémentation actuelle, on peut écarter cette possibilité 
 \subsection{Asynchronie des signaux}
 Le programme présenté ici gère les signaux \texttt{SIGINT} et \texttt{SIGPIPE}. Les signaux étant asynchrones, une difficulté de ce projet était de les gérer pour :
 \begin{itemize}
-    \item éviter l'interruption inopinée d'opérations cruciales (écriture/lecture notamment)
-    \item permettre de définir les actions à exécuter en cas de réception d'un signal
-    \item garantir une \textit{communication} adéquate entre les clients et le serveur (lorsqu'un client se déconnecte, il doit pouvoir le communiquer au serveur pour que celui-ci évite de relayer des messages dans le vide)
+    \item Éviter l'interruption inopinée d'opérations cruciales (écriture/lecture notamment)
+    \item Permettre de définir les actions à exécuter en cas de réception d'un signal
+    \item Garantir une \textit{communication} adéquate entre les clients et le serveur (lorsqu'un client se déconnecte, il doit pouvoir le communiquer au serveur pour que celui-ci évite de relayer des messages dans le vide)
 \end{itemize}
 
 Il a donc été décidé de centraliser la gestion des signaux dans une classe dédiée, \texttt{SignalManager}, pour laquelle on peut lister ses choix de conception les plus importants.
@@ -188,10 +188,10 @@ Il a donc été décidé de centraliser la gestion des signaux dans une classe d
 \subsubsection{Différence entre le mode normal et le mode \texttt{manuel}}
 Lors de l'arrêt du programme, le signal manager prend en compte l'absence (\texttt{SignalManager::signalHandler}) ou la présence du mode \texttt{manuel} (\texttt{SignalManager::signalHandlerManuel}).
 
-\subsubsection{Masquage des signaux pour le thread récepteur côté client}
+\subsubsection*{Masquage des signaux pour le thread récepteur côté client}
  On en a déjà discuté dans ce rapport, mais tout client possède deux threads distincts, un pour l'envoi et un autre pour la réception de messages. Ce dernier possède un \textit{masque} qui fait qu'il ignore tous les signaux qui lui parviennent. Ce choix a été fait pour centraliser la gestion des signaux côté client dans le thread principal.
 
-\subsubsection{Communication de signaux entre threads}
+\subsubsection*{Communication de signaux entre threads}
 Le masquage des signaux était une solution à la répartition des gestions des signaux par les threads. Mais il est également possible d'envoyer des signaux entre les threads. Ceci est possible car chaque thread possède un ID. Si le second thread qui s'occupe de la lecture via le server reçoit un signal qui indique que le serveur nous a déconnecté alors il est possible de prévenir le thread noyau pour qu'il s'occupe du reste via un pthread\_kill().
 
 
@@ -204,7 +204,7 @@ Etant donné que deux threads sont utilisés dans le cadre de ce projet, il éta
 \end{itemize}
 Ceci a été réalisé grâce à l'utilisation d'un mutex différent pour chaque cas.
 
-\subsubsection{Deadlocks}
+\subsubsection*{Deadlocks}
 Dans le cadre de ce projet, diverses situations de deadlocks/d'interblocages ont également fait surface. Il a donc fallu utiliser les threads et les mutex d'une façon réflechie pour éviter cela. Voici deux cas qu'il a fallu gérer/corriger:
 \begin{itemize}
     \item L'appel d'un méthode qui sert à déconnecter le client par le second thread. Ceci pose problème car la méthode responsable de la déconnexion essaye de joindre ce même thread pour le terminer. Il faut donc éviter d'appeler cette méthode par ce thread et seulement y faire appel par le thread noyau.
