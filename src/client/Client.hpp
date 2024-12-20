@@ -30,6 +30,7 @@ public:
 private:
     // Données personnelles
     std::string name_;
+    std::string nameClassic_;
     std::string memory_;
     bool modManuel_;
     bool modBot_;

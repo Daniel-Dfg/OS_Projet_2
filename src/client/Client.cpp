@@ -45,9 +45,9 @@ void Client::Connect() {
     signalManager.clientConnected = true;
 
     // Envoyer le nom au serveur
-    std::string nametosend = name_;
-    std::replace(nametosend.begin(), nametosend.end(), ' ', '-');
-    check_return_value(write(socket_, nametosend.c_str(), nametosend.length()));
+    nameClassic_ = name_;
+    std::replace(nameClassic_.begin(), nameClassic_.end(), ' ', '-');
+    check_return_value(write(socket_, nameClassic_.c_str(), nameClassic_.length()));
 
     SetNickName(name_);
 
@@ -71,10 +71,15 @@ void Client::SendMessage() {
             }
         }
         space = message.find(' ');
+        std::string receiver = message.substr(0,space);
         std::string onlyText = message.substr(space + 1);
 
         // Si le message ne dépasse pas les 1024 octets et contient au minimum un espace
         if (size(onlyText) < 1024 && space != std::string::npos) {
+            if (receiver == nameClassic_) {
+                std::cerr << "Vous ne pouvez pas envoyer un message à vous même\n";
+                continue;
+            }
             if (!modBot_) {
                 std::lock_guard<std::mutex> lock(displayMutex);
                 std::cout << name_ << " : " << onlyText << "\n";
@@ -141,6 +146,10 @@ void Client::ReceiveMessage() {
 // Affiche un message reçu dans la console
 void Client::DisplayMessage(const char *buffer) {
     std::lock_guard<std::mutex> lock(displayMutex);
+    if (std::strchr(buffer, ' ') == nullptr) {
+        std::cerr << "Cette personne ("<<buffer<<") n'est pas connectée.\n";
+        return;
+    }
 
     std::string name;
     std::string message;
