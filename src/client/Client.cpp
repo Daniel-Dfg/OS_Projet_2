@@ -92,7 +92,7 @@ void Client::SendMessage() {
 
 // Réception des messages du serveur
 void Client::ReceiveMessage() {
-    char buffer[1024];
+    char buffer[1024] = {0};
     // Bloque le signal SIGINT dans le readThread_
     if (modManuel_) { // Enoncé : si option manuel : SIGINT doit être vu par thread d'origine et afficher memory
         sigset_t set;
@@ -141,7 +141,9 @@ void Client::ReceiveMessage() {
 // Affiche un message reçu dans la console
 void Client::DisplayMessage(const char *buffer) {
     std::lock_guard<std::mutex> lock(displayMutex);
-    if (std::strchr(buffer, ' ') == nullptr) {
+    std::cout << "buffer avant : " << buffer << std::endl;
+    if (std::strchr(buffer, ' ') == nullptr)
+    {
         std::cerr << "Cette personne ("<<buffer<<") n'est pas connectée.\n";
         return;
     }
@@ -156,6 +158,7 @@ void Client::DisplayMessage(const char *buffer) {
     SetNickName(name);
     std::getline(stream, message);
     std::cout << name << " :" << message << std::endl;
+    memset(&buffer,0, sizeof(buffer))
 }
 
 // Affiche la mémoire en mode manue

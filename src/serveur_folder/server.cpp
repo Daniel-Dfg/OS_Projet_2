@@ -99,7 +99,7 @@ void Server::handleNewConnection() {
 void Server::handleClientMessage(int client_fd) {
     const int MAX_MESSAGE_SIZE = 1024;
     const int MAX_PSEUDO_SIZE = 30;
-    const int MAX_BUFFER_SIZE = MAX_PSEUDO_SIZE + 1; // Inclut le pseudo et laise la place pour rajouter un \0
+    const int MAX_BUFFER_SIZE = MAX_PSEUDO_SIZE + MAX_MESSAGE_SIZE + 2; // Inclut le pseudo et laise la place pour rajouter un \0 et l'espace entre pseudo et message
     char buffer[MAX_BUFFER_SIZE];
 
     // Lis le message du client
@@ -107,19 +107,20 @@ void Server::handleClientMessage(int client_fd) {
         read(client_fd, buffer, sizeof(buffer)- 1),
         "lecture message client"
     );
-    buffer[bytes] = '\0'; 
-
+    buffer[bytes] = '\0';
+    std::cout << "message brut : " << buffer  << " NB de byte" << bytes << std::endl;
     // Vérification du contenu entier
     if (bytes > MAX_BUFFER_SIZE) {
             std::cerr << "Erreur durant la réception du message (trop long)";
-            close(client_fd);
+            handleDisconnection(client_fd);
             return;
-        }
+    }
 
     // Extraire le pseudo et le texte 
     const string sender = fd_to_name[client_fd];
     string raw_message(buffer);
     size_t pos = raw_message.find(" ");
+
 
     // Verification du format
     if (pos == string::npos) {
@@ -133,6 +134,7 @@ void Server::handleClientMessage(int client_fd) {
     string receiver = raw_message.substr(0, pos); // Partie avant l'espace : destinataire
     string message_text = raw_message.substr(pos + 1); // Partie après l'espace : texte du message
 
+    std::cout << "RECEIVER : " << receiver  << " MESSAGE : " << message_text << std::endl;
     // Vérification de la taille du texte seul
     if (message_text.size() > MAX_MESSAGE_SIZE) {
         string error = "Erreur : le texte du message dépasse " + std::to_string(MAX_MESSAGE_SIZE) + " octets.\n";
@@ -143,8 +145,8 @@ void Server::handleClientMessage(int client_fd) {
     
     // Verification Si le destinataire est connecté 
     if (name_to_fd.find(receiver) == name_to_fd.end()) {
-        string error_message = receiver; // Dois afficher erreur sur le std::cerr de l'utilisateur, géré coté client
-        send(client_fd, error_message.c_str(), error_message.size(), 0);
+        std::cout << "Le nom final (cas de déconnexion)" << receiver << std::endl;
+        write(client_fd, receiver.c_str(), sizeof(receiver)); // a etudier
         return;
     }
 
