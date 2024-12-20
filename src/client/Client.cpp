@@ -73,6 +73,11 @@ void Client::SendMessage() {
         std::string receiver = message.substr(0,space);
         std::string onlyText = message.substr(space + 1);
 
+        if (receiver.empty() || onlyText.empty()) {
+            std::cerr << "Format message invalide\n";
+            continue;
+        }
+
         // Si le message ne dépasse pas les 1024 octets et contient au minimum un espace
         if (size(onlyText) < 1024 && space != std::string::npos) {
             if (receiver == nameClassic_) {
@@ -117,6 +122,7 @@ void Client::ReceiveMessage() {
             }
 
             buffer[bytesReceived] = '\n';
+            buffer[bytesReceived+1] = '\0';
             if (modManuel_) {
                 std::cout << "\a";
                 std::flush(std::cout);
@@ -145,8 +151,7 @@ void Client::ReceiveMessage() {
 // Affiche un message reçu dans la console
 void Client::DisplayMessage(const char *buffer) {
     std::lock_guard<std::mutex> lock(displayMutex);
-    if (std::strchr(buffer, ' ') == nullptr)
-    {
+    if (std::strchr(buffer, ' ') == nullptr) {
         std::cerr << "Cette personne ("<<buffer<<") n'est pas connectée.\n";
         return;
     }
