@@ -7,7 +7,6 @@
 #include <thread>
 #include <atomic>
 #include <cstring>
-#include <queue>
 #include <pthread.h>
 #include <netinet/in.h>
 #include <unistd.h>

@@ -1,7 +1,7 @@
 #include "SetUp.hpp"
+#include "codeserreurs.hpp"
 #include <iostream>
 #include <cstdlib>
-#include <sstream>
 
 static void VerifyEntries(int argc, char *argv[], OptionsProgramme *opt, std::string &name) {
     const std::string charsInterdits = "/[]-";

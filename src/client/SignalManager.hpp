@@ -2,8 +2,7 @@
 #define PROJETOS_SIGNALMANAGER_HPP
 
 #include <csignal>
-#include <iostream>
-#include "codeserreurs.hpp"
+
 
 // Classe SignalManager
 // Gère les signaux système pour contrôler le comportement du programme

@@ -10,8 +10,6 @@
 #include <cstring> // Pour strlen
 #include <queue>
 #include <poll.h>
-#include <signal.h>
-//#include <signal.h>
 
 using std::string, std::unordered_map;
 
@@ -36,5 +34,5 @@ public:
     static void sendMessage(const string receiver, const Message& msg);
     static void run();
     static void stop();
-    
+
 };

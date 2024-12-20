@@ -1,4 +1,5 @@
 #include "SignalManager.hpp"
+#include "codeserreurs.hpp"
 
 bool SignalManager::clientConnected=false;
 bool SignalManager::showMemory=false;

@@ -19,8 +19,8 @@ void signalHandler(int signum) {
 }
 
 // Crée le socket principal pour écouter les connexions entrantes
-void Server::init(int port){ 
-    
+void Server::init(int port){
+
     server_fd = check_return_value(socket(AF_INET, SOCK_STREAM, 0), "socket creation");
 
     int opt = 1;
@@ -108,7 +108,6 @@ void Server::handleClientMessage(int client_fd) {
         "lecture message client"
     );
     buffer[bytes] = '\0';
-    std::cout << "message brut : " << buffer  << " NB de byte" << bytes << std::endl;
     // Vérification du contenu entier
     if (bytes > MAX_BUFFER_SIZE) {
             std::cerr << "Erreur durant la réception du message (trop long)";
@@ -116,7 +115,7 @@ void Server::handleClientMessage(int client_fd) {
             return;
     }
 
-    // Extraire le pseudo et le texte 
+    // Extraire le pseudo et le texte
     const string sender = fd_to_name[client_fd];
     string raw_message(buffer);
     size_t pos = raw_message.find(" ");
@@ -134,7 +133,6 @@ void Server::handleClientMessage(int client_fd) {
     string receiver = raw_message.substr(0, pos); // Partie avant l'espace : destinataire
     string message_text = raw_message.substr(pos + 1); // Partie après l'espace : texte du message
 
-    std::cout << "RECEIVER : " << receiver  << " MESSAGE : " << message_text << std::endl;
     // Vérification de la taille du texte seul
     if (message_text.size() > MAX_MESSAGE_SIZE) {
         string error = "Erreur : le texte du message dépasse " + std::to_string(MAX_MESSAGE_SIZE) + " octets.\n";
@@ -142,10 +140,9 @@ void Server::handleClientMessage(int client_fd) {
         handleDisconnection(client_fd);
         return;
     }
-    
-    // Verification Si le destinataire est connecté 
+
+    // Verification Si le destinataire est connecté
     if (name_to_fd.find(receiver) == name_to_fd.end()) {
-        std::cout << "Le nom final (cas de déconnexion)" << receiver << std::endl;
         write(client_fd, receiver.c_str(), sizeof(receiver)); // a etudier
         return;
     }
@@ -153,7 +150,6 @@ void Server::handleClientMessage(int client_fd) {
     message_text = sender + " " + message_text;
     // Création du message
     Message msg(sender,receiver, message_text);
-    std::cout << "Message de: " << msg.getSender() << " à envoyé à " << msg.getReceiver() << " : " << msg.getText() << std::endl;
     sendMessage(msg.getReceiver(), msg);
 }
 
@@ -164,7 +160,7 @@ void Server::handleDisconnection(int client_fd) {
     name_to_fd.erase(name);
     fd_to_name.erase(client_fd);
 
-    // Suppresion du pseudo en parcourant le poll 
+    // Suppresion du pseudo en parcourant le poll
     for (size_t i = 0; i < poll_fds.size(); i++) {
             if (poll_fds[i].fd == client_fd) {
                 poll_fds.erase(poll_fds.begin() + i);
@@ -256,9 +252,9 @@ void Server::stop() {
 int main() {
     // TODO géré correctement les signaux Ctrl + c ici
     struct sigaction sa;
-    sa.sa_handler = signalHandler; 
-    sigemptyset(&sa.sa_mask);      
-    sa.sa_flags = 0;              
+    sa.sa_handler = signalHandler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
     if (sigaction(SIGINT, &sa, nullptr) < 0) {
         perror("Erreur lors de la configuration du gestionnaire de signaux");
         return 1;
