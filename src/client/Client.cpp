@@ -141,10 +141,6 @@ void Client::ReceiveMessage() {
 // Affiche un message reçu dans la console
 void Client::DisplayMessage(const char *buffer) {
     std::lock_guard<std::mutex> lock(displayMutex);
-    if (std::strchr(buffer, ' ') == nullptr) {
-        std::cerr << "Cette personne ("<<buffer<<") n'est pas connectée.\n";
-        return;
-    }
 
     std::string name;
     std::string message;

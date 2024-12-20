@@ -99,7 +99,7 @@ void Server::handleNewConnection() {
 void Server::handleClientMessage(int client_fd) {
     const int MAX_MESSAGE_SIZE = 1024;
     const int MAX_PSEUDO_SIZE = 30;
-    const int MAX_BUFFER_SIZE = MAX_PSEUDO_SIZE + 1; // Inclut le pseudo et laise la place pour rajouter un \0
+    const int MAX_BUFFER_SIZE = MAX_MESSAGE_SIZE + MAX_PSEUDO_SIZE + 1; // Inclut le pseudo et laise la place pour rajouter un \0
     char buffer[MAX_BUFFER_SIZE];
 
     // Lis le message du client
@@ -108,16 +108,19 @@ void Server::handleClientMessage(int client_fd) {
         "lecture message client"
     );
     buffer[bytes] = '\0'; 
+    std::cout << buffer << std::endl;
 
     // Vérification du contenu entier
     if (bytes > MAX_BUFFER_SIZE) {
             std::cerr << "Erreur durant la réception du message (trop long)";
             close(client_fd);
+            //TODO : exclure le client des utilisateurs actifs avant de fermer la socket
             return;
         }
 
     // Extraire le pseudo et le texte 
-    const string sender = fd_to_name[client_fd];
+    const string sender = fd_to_name.find(client_fd) != fd_to_name.end() ? fd_to_name.at(client_fd) : "Unknown"; //TODO : gérer ce cas plus proprement
+    //const string sender = fd_to_name.at(client_fd);
     string raw_message(buffer);
     size_t pos = raw_message.find(" ");
 
@@ -132,6 +135,7 @@ void Server::handleClientMessage(int client_fd) {
 
     string receiver = raw_message.substr(0, pos); // Partie avant l'espace : destinataire
     string message_text = raw_message.substr(pos + 1); // Partie après l'espace : texte du message
+    std::cout << message_text << std::endl;
 
     // Vérification de la taille du texte seul
     if (message_text.size() > MAX_MESSAGE_SIZE) {
