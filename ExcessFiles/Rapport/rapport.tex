@@ -18,7 +18,7 @@
 \title{Rapport de projet : Chat201 – édition thread \& réseau}
 \author{Daniel DEFOING (\texttt{ddef0003}) \and 
         Belinda ÖZNUR (\texttt{bozn0002}) \and
-        Haluk YILMAZ (\texttt{hyil0003})}
+        Haluk YILMAZ (\texttt{hyil0002})}
 \date{\today}
 
 \begin{document}
@@ -36,12 +36,12 @@
 \section{Choix du langage :pourquoi C++ plutôt que C ?}
 
 \subsection*{Des outils qui facilitent le développement en général}
-\noindent Une raison fondamentale qui a guidé cette décision est que C++ possède des fonctionnalités absentes en C tels que les références, les chaînes de caractères (ou \textit{strings}, qu'on a souvent subsitués aux \texttt{char*[]}) ou encore les classes. 
+\noindent Une raison fondamentale qui a guidé cette décision est que C++ possède des fonctionnalités absentes en C tels que les références, les chaînes de caractères (ou \textit{strings}, qu'on a souvent subsitués aux \texttt{char*[]}) ou encore les classes.
 
 \noindent On peut aussi parler des conteneurs STL comme \texttt{std::vector} ou \texttt{std::queue} \cite{std::queue}, très utilisés dans cette implémentation du projet.
 
 
-\noindent Or, dans le cadre du projet présenté ici, ces éléments apportent une pluvalue non négligeable en permettant de structurer un code de façon plus fine qu'en C ou de simplifier grandement certaines opérations. L'exemple le plus trivial qu'on peut donner de ceci est le passage de paramètres par référence plutôt que par pointeur dans certaines fonctions, qui permet une gestion plus sûre de la mémoire.
+\noindent Or, dans le cadre du projet présenté ici, ces éléments apportent une plus-value non négligeable en permettant de structurer un code de façon plus fine qu'en C ou de simplifier grandement certaines opérations. L'exemple le plus trivial qu'on peut donner de ceci est le passage de paramètres par référence plutôt que par pointeur dans certaines fonctions, qui permet une gestion plus sûre de la mémoire.
 
 \subsection*{Des librairies qui fournissent des abstractions utiles pour ce projet}
 \noindent On va illustrer ce point en parlant des \textit{threads}. En langage C, on utilisera \texttt{pthread.h} \cite{pthread.h} pour les gérer, alors qu'en C++ on a par exemple accès à la librairie standard \texttt{std::thread} \cite{std::thread}, qui permet d'abstraire certaines opérations de la librairie en C (par exemple, accéder au thread courant avec \texttt{std::this\_thread} \cite{std::thread}).
@@ -59,21 +59,21 @@ De plus, les deux langages étant connus pour leur rapidité d'exécution, la pe
 \noindent Cette section discute des choix de conception du programme final, des considérations qui permettront au lecteur de mieux comprendre la nature de ces choix et des problèmes rencontrés qui en ont suivi.
 
 \subsection{Le serveur en tant que \textit{point relais} des clients}
-\noindent La structure d'un programme client-serveur tel que celui présenté ici peut être visualisée très simplement sous la forme d'un Graphe Étoile \cite{Graphe Étoile}, avec le serveur au centre et les clients aux extrémités de chaque branche. 
+\noindent La structure d'un programme client-serveur tel que celui présenté ici peut être visualisée très simplement sous la forme d'un Graphe Étoile \cite{Graphe Étoile}, avec le serveur au centre et les clients aux extrémités de chaque branche.
 \begin{figure}[ht]
     \centering
     \includegraphics[width=0.25\linewidth]{etoile.png}
     \caption{\textit{Graphe Étoile typique.}}
 \end{figure}
 
-\noindent Cette représentation montre bien qu'un seul serveur se charge de \textit{relayer} les informations à passer d'un client à un autre ou d'un client vers lui-même (confirmation de (dé)connexion notamment). 
+\noindent Cette représentation montre bien qu'un seul serveur se charge de \textit{relayer} les informations à passer d'un client à un autre ou d'un client vers lui-même (confirmation de (dé)connexion notamment).
 
 \noindent Dans la suite, on verra en profondeur la façon dont les sommets de ce graphe communiquent.
 
 \subsection{Choix d'implémentation communs aux clients et au serveur}
 
 \subsubsection{Du protocole de communication}
-Le choix du \textit{Transmission Control Protocol} \cite{TCP-IP} comme moyen de communication client-serveur n'était pas un "choix" à proprement parler, mais il convient de mentionner que sa mise en place a été faite en suivant globalement la méthode décrite dans la séance de Travaux Pratiques associée. \cite{TP_OS}
+Le choix du \textit{Transmission Control Protocol} \cite{TCP-IP} comme moyen de communication client-serveur n'était pas un "choix" à proprement parler, mais il convient de mentionner que sa mise en place a été faite en suivant globalement la méthode décrite dans la séance de Travaux Pratiques associée \cite{TP_OS}. Pour ce qui est de protocole de réseau, ce sont les adresses de famille IPv4 qui sont utilisés.
 
 \subsubsection{De la méthode d'envoi des messages}
 \noindent Il a été décidé d'abstraire l'échange d'informations entre les clients et le serveur principalement par une classe \texttt{Message}. Un point très important qui découle de ce choix d'implémentation est qu'on a utilisé des \texttt{std::string} \cite{std::string} pour garantir une gestion dynamique de la mémoire et simplifier les opérations de manipulation des chaînes de caractère.
@@ -81,7 +81,7 @@ Le choix du \textit{Transmission Control Protocol} \cite{TCP-IP} comme moyen de 
 \subsection{Conception des clients}
 
 \subsubsection{Deux FIFOs (ou \textit{files}) à vider en permanence}
-\noindent Tout client possède deux \texttt{std::queue} \cite{std::queue} qu'il observe en permanence: une pour les messages qu'il envoie, et une pour ceux qu'il reçoit. 
+\noindent Tout client possède deux \texttt{std::queue} \cite{std::queue} qu'il observe en permanence: une pour les messages qu'il envoie, et une pour ceux qu'il reçoit.
 
 \noindent Utiliser des \texttt{std::queue} n'ayant pas de taille limitée ainsi est une partie de la solution aux problèmes de synchronisation qui peuvent être rencontrés dans le cadre de ce projet. En effet, si un client reçoit plusieurs messages en même temps, les messages peuvent être \textit{push} à l'arrière de la FIFO servant et traités séquentiellement par le client qui la videra progressivement.
 
@@ -93,35 +93,37 @@ Le choix du \textit{Transmission Control Protocol} \cite{TCP-IP} comme moyen de 
 
 
 \subsubsection{Deux threads, deux FIFOs par client}
-Ce point fait écho à la discussion de la section précédente sur l'usage de FIFOs côté client. 
+Ce point fait écho à la discussion de la section précédente sur l'usage de FIFOs côté client.
 
-\noindent Il faut préciser que le processus côté client se divise en deux \textit{threads}: un dédié à la réception des messages (qui doit donc vider et afficher le contenu de la FIFO de messages entrants) et un autre dédié à l'envoi de messages (qui doit donc en quelque sorte remplir la FIFO des messages à envoyer, puis la vider progressivement). 
+\noindent Il faut préciser que le processus côté client se divise en deux \textit{threads}: un dédié à la réception des messages (qui doit donc vider et afficher le contenu de la FIFO de messages entrants) et un autre dédié à l'envoi de messages (qui doit donc en quelque sorte remplir la FIFO des messages à envoyer, puis la vider progressivement).
 
 \noindent Cette division du processus client en deux threads est due à des contraintes évidentes de performance et autorise le client à envoyer et recevoir des messages simultanément (gestion asynchrone des communications).
 
 \subsubsection{Gestion de la (dé)connexion au serveur}
-\noindent Tout client doit suivre le protocole TCP \cite{TCP-IP} pour initialiser sa connexion et doit s'identifier auprès du serveur.
+\noindent Tout client doit suivre le protocole TCP \cite{TCP-IP} pour initialiser sa connexion et doit s'identifier auprès du serveur. Si le client n'arrive pas à se connecter au server pour une certaine raison, il réenvoie des demandes de connexion périodiquement.
 (incomplet)
 
 
  Gestion de la déconnexion (quel thread tue l'autre, comment on se déconnecte) TODO :
- 
-1. Signal de terminaison envoyé aux deux threads
+
+1. Signalement de déconnexion via un attribut et fermeture des sockets
 
 2. Attente de la fin des opérations en cours
 
-3. Libération des ressources
+3. Terminaison du thread non-noyau
 
-4. Fermeture propre de la connexion
+4. Terminaison du processus
+
+En cas d'erreur, un exit est provoqué avec le code d'erreur correspondant. Ceci ne pose pas de problème car il n'y a pas de ressources à gérer dynamiquement. Les données de l'instance sont supprimés, les sockets sont fermés par le système, les threads sont terminés automatiquement.
 
 \subsection{Conception du serveur}
 
 \subsubsection{De l'utilisation de \texttt{poll}}
-\texttt{poll} \cite{poll} est l'outil qui a été choisi côté serveur pour gérer les connexions et envoi de messages par les clients. Il fonctionne ainsi \cite{poll} : 
+\texttt{poll} \cite{poll} est l'outil qui a été choisi côté serveur pour gérer les connexions et envoi de messages par les clients. Il fonctionne ainsi \cite{poll} :
 \begin{enumerate}
     \item Initialiser un \texttt{std::vector} de \texttt{pollfd} (descripteurs de fichier) pour gérer les communications. Chaque entrée dans ce vecteur correspond à une socket connecté au serveur, y compris le socket principal qui gère les nouvelles connexions.
     \item Pour chaque client qui se connecte au serveur, une nouvelle entrée  est ajoutée au \texttt{std::vector}. Symétriquement, ors d'une déconnexion, il faut parcourir ce vecteur pour localiser et supprimer l'entrée correspondante.
-    \item \texttt{poll} est \textit{level-triggered}, ce qui signifie que tant qu'un descripteur de fichier est prêt à être traité, l'entrée correspondante dans le vecteur seras signalée. Le serveur est donc "notifié" tant que les données sont disponibles, \cite{LevelEdgeTrigger} \cite{PollTrigger} et il doit se charger de traiter explicitement les évenements signalés pour éviter que ces notifications ne persistent indéfiniment.\\ En pratique, il \textit{boucle} sur le vecteur pendant toute sa durée de vie. 
+    \item \texttt{poll} est \textit{level-triggered}, ce qui signifie que tant qu'un descripteur de fichier est prêt à être traité, l'entrée correspondante dans le vecteur seras signalée. Le serveur est donc "notifié" tant que les données sont disponibles, \cite{LevelEdgeTrigger} \cite{PollTrigger} et il doit se charger de traiter explicitement les évenements signalés pour éviter que ces notifications ne persistent indéfiniment.\\ En pratique, il \textit{boucle} sur le vecteur pendant toute sa durée de vie.
     \item Lorsqu’un événement de lecture est détecté sur une entrée du vecteur, le serveur lis le message du client. Il traite ensuite ce message, vérifie sa validité (taille, format..), puis il recherche à qui le client expéditeur a voulu transmettre son message \footnote{En pratique, on recherche le nom du client récepteur dans un \texttt{std::unordered\_map} avec le nom du client comme clé et son \texttt{pollfd} comme valeur.} et, s'il existe, écrit dans le \texttt{pollfd} du client récepteur.
 
 
@@ -149,7 +151,7 @@ Au début du projet, nous avons utilisé \texttt{boost::asio}, une bibliothèque
 
 Cependant, nous avons constaté que l’utilisation de \texttt{boost::asio} représentait une solution qui dépasse les cadres de ce cours pour un serveur qui doit être réalisé en 2 semaines, devant gérer un maximum de 1000 connexions simultanées, et traiter des messages court. De plus, bien que très instructif, nous n’étions pas assez à l’aise avec tout les aspects et la richesse de cette bibliothèque dans le temps imparti. Cette situation nous as permis d'explorer d’autres solutions, comme \texttt{poll}, qui étaient plus adaptées dans le cadre de ce cours.
 
-L’utilisation de \texttt{boost::asio} nous a tout de même permis d'approfondir une multitudes de concepts, tels que le fonctionnement et l'optimisation de grand serveurs, les mécanismes asynchrones, \texttt{epoll}. 
+L’utilisation de \texttt{boost::asio} nous a tout de même permis d'approfondir une multitudes de concepts, tels que le fonctionnement et l'optimisation de grand serveurs, les mécanismes asynchrones, \texttt{epoll}.
 
 En conclusion, bien que l’intégration initiale de \texttt{boost::asio} ait été finalement abandonnée, elle a apporté des connaissances qui nous serons très utiles dans le cadre de nos futurs projets académiques ou professionnels.
 
@@ -158,16 +160,16 @@ En conclusion, bien que l’intégration initiale de \texttt{boost::asio} ait é
 
 \noindent Par manque de temps, un système plus propre n'a pas pu être mis en place, mais on peut en esquisser le fonctionnement théorique (qui aurait certainement pu, comme pour \texttt{epoll}, être implémenté en quelques jours) :
 \begin{enumerate}
-    \item Initialement, la FIFO des messages entrants est vide. Dès qu'un message est envoyé au client, celui-ci est notifié et \texttt{pop()} un élément de la FIFO pour le traiter. 
-    \item Chaque nouveau message entrant correspond à une nouvelle "notification" pour le client, à une nouvelle tâche à faire : on peut donc facilement avoir un "compteur de tâches à faire" qui indique combien de fois le client doit extraire un message de la FIFO. Ce compteur serait naturellement décrémenté dès que le client aurait fini une tâche. 
-    
-    Par exemple, si un client reçoit 3 messages en même temps, il est censé être notifié 3 fois et donc \texttt{pop()} le premier élément de la FIFO 3 fois (ce qui vide exactement la FIFO, en principe). 
+    \item Initialement, la FIFO des messages entrants est vide. Dès qu'un message est envoyé au client, celui-ci est notifié et \texttt{pop()} un élément de la FIFO pour le traiter.
+    \item Chaque nouveau message entrant correspond à une nouvelle "notification" pour le client, à une nouvelle tâche à faire : on peut donc facilement avoir un "compteur de tâches à faire" qui indique combien de fois le client doit extraire un message de la FIFO. Ce compteur serait naturellement décrémenté dès que le client aurait fini une tâche.
+
+    Par exemple, si un client reçoit 3 messages en même temps, il est censé être notifié 3 fois et donc \texttt{pop()} le premier élément de la FIFO 3 fois (ce qui vide exactement la FIFO, en principe).
     \item Lorsque la FIFO est vide, le client a donc en théorie réalisé toutes les tâches qui lui étaient assignées et n'a par conséquent pas besoin de vérifier son contenu en permanence.
 \end{enumerate}
 
 \section{Difficultés rencontrées et solutions trouvées}
 \subsection{Problèmes de synchronisation côté serveur}
-Pendant le développement, l'hypothèse selon laquelle on aurait pu faire face à des problèmes de synchronisation côté serveur (typiquement, en recevant deux messages en même temps) était bien présente. 
+Pendant le développement, l'hypothèse selon laquelle on aurait pu faire face à des problèmes de synchronisation côté serveur (typiquement, en recevant deux messages en même temps) était bien présente.
 
 Cependant, dans l'implémentation actuelle, on peut écarter cette possibilité puisque le serveur traite les événements de manière séquentielle, en \textit{mono-thread} grâce à \texttt{poll}, éliminant ainsi à la fois les risques d'accès concurrents et à la fois les problèmes d'ordre d'envoi et réception des messages \footnote{Comprenez : si 3 messages A, B, C sont lus dans cet ordre, alors ils seront aussi envoyés dans l'ordre A, B, C.}. Chaque événement est ainsi traité de manière séquentielle.
 
@@ -180,13 +182,35 @@ Le programme présenté ici gère les signaux \texttt{SIGINT} et \texttt{SIGPIPE
 \end{itemize}
 
 Il a donc été décidé de centraliser la gestion des signaux dans une classe dédiée, \texttt{SignalManager}, pour laquelle on peut lister ses choix de conception les plus importants.
+
+
+
 \subsubsection{Différence entre le mode normal et le mode \texttt{manuel}}
 Lors de l'arrêt du programme, le signal manager prend en compte l'absence (\texttt{SignalManager::signalHandler}) ou la présence du mode \texttt{manuel} (\texttt{SignalManager::signalHandlerManuel}).
 
 \subsubsection{Masquage des signaux pour le thread récepteur côté client}
  On en a déjà discuté dans ce rapport, mais tout client possède deux threads distincts, un pour l'envoi et un autre pour la réception de messages. Ce dernier possède un \textit{masque} qui fait qu'il ignore tous les signaux qui lui parviennent. Ce choix a été fait pour centraliser la gestion des signaux côté client dans le thread principal.
 
-\subsubsection{TODO...}
+\subsubsection{Communication de signaux entre threads}
+Le masquage des signaux était une solution à la répartition des gestions des signaux par les threads. Mais il est également possible d'envoyer des signaux entre les threads. Ceci est possible car chaque thread possède un ID. Si le second thread qui s'occupe de la lecture via le server reçoit un signal qui indique que le serveur nous a déconnecté alors il est possible de prévenir le thread noyau pour qu'il s'occupe du reste via un pthread\_kill().
+
+
+
+\subsection{Situations de concurrence}
+Etant donné que deux threads sont utilisés dans le cadre de ce projet, il était nécessaire de gérer explicitement les accès cas de concurrence pour :
+\begin{itemize}
+    \item L'affichage des messages envoyés ou reçu sur le terminal.
+    \item La modification de la mémoire pour y ajouter ou retirer des messages.
+\end{itemize}
+Ceci a été réalisé grâce à l'utilisation d'un mutex différent pour chaque cas.
+
+\subsubsection{Deadlocks}
+Dans le cadre de ce projet, diverses situations de deadlocks/d'interblocages ont également fait surface. Il a donc fallu utiliser les threads et les mutex d'une façon réflechie pour éviter cela. Voici deux cas qu'il a fallu gérer/corriger:
+\begin{itemize}
+    \item L'appel d'un méthode qui sert à déconnecter le client par le second thread. Ceci pose problème car la méthode responsable de la déconnexion essaye de joindre ce même thread pour le terminer. Il faut donc éviter d'appeler cette méthode par ce thread et seulement y faire appel par le thread noyau.
+    \item Le blocage d'un mutex avant l'appel d'une autre méthode qui utilise lui même ce mutex dans le même scope. Ceci provoque un interblocage car quand la méthode est appelé et qu'il veut opérer il doit attendre que le mutex soit libéré indéfiniment.
+\end{itemize}
+
 
 
 \subsection{Garantie de l'intégrité du contenu partagé par les clients}
