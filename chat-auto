@@ -1,2 +1,40 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
+set -e  # Arrête le script dès qu'il y'a une erreur
+
+
+# Fonction pour traiter l'entrée et gérer le CTRL+D
+input_chat() {
+  receiver=""
+  while [[ -z "$receiver" ]]; do # Tant que le nom donné est vide
+      echo -n "Qui est votre destinataire ? : " >&2
+      read -r receiver
+  done
+  while true; do
+      # Lire une ligne de l'entrée standard
+      if read -r line; then
+          # Ajouter le pseudo au message et l'envoyer
+          echo "$receiver $line" # Envoie au stdin de ./chat
+      else
+          # Si Ctrl+D est détecté (fin d'entrée), demander un nouveau pseudo
+          echo -n "Changement de destinataire. Entrez un nouveau pseudo : " >&2
+          read -r receiver
+          if [[ -z "$receiver" ]]; then # Entrée vide après CTRL+D := quitte
+              exit 3
+          fi
+      fi
+  done
+  }
+
+# Fonction principale
+main() {
+    if [ "$#" -ge 1 ]; then # Si il y'a au moins un argument donné
+        # Connecter la sortie de input_chat à ./chat et donner les arguments
+        input_chat | ./chat "$@"
+    else
+        echo "Erreur : Veuillez fournir au moins un argument." >&2
+        exit 1
+    fi
+}
+
+main "$@"
