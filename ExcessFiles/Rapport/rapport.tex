@@ -81,6 +81,13 @@ Le choix du \textit{Transmission Control Protocol} \cite{TCP-IP} comme moyen de 
 
 \subsection{Conception des clients}
 
+\subsubsection{Capacités d'envoie et de réception}
+
+ Tout client possède un socket pour communiquer avec le server. Ces sockets possèdent 2 buffers par défaut dont l'un pour l'écriture et l'autre pour la lecture. La taille d'un buffer change d'un OS ou d'une machine à l'autre. Cependant ces tailles vont des dizaines à des centaines de Ko. Étant donné que chaque message a au plus 1 Ko et que chaque message est traité très rapidement dés l'envoi ou la réception, ces tailles sont largement suffisants dans le cadre de ce projet. Si toutefois on arrivait à une situation de buffer plein, alors le server se chargera de déconnecter l'utilisateur en question.
+
+Il serait utile de rajouter que la taille par défaut donnée par la machine pour ces buffers de socket IPv4 peut être augmenté. On peut multiplier jusqu'à des dizaines de fois ceux-ci en choisissant la valeur maximale. Nous ne l'avons pas fait dans le cadre de ce projet que les valeurs offertes par défaut sont suffisantes.
+
+
 \subsubsection{Deux threads, un socket par client}
  La section précédente se focalise sur l'aspect taille du problème. Pour ce qui est de l'aspect temporel dans la gestion de ces 2 buffers, nous utilisons deux threads. Le thread noyau qui est créé en même temps que le processus est dédié à l'envoi de messages (qui doit donc en quelque sorte remplir le buffer des messages à envoyer, puis la vider progressivement) tandis que le second thread créé manuellement est dédié à la réception des messages (qui doit donc vider le buffer et afficher le contenu de messages entrants). Ainsi les deux buffers ne sont pas limités par l'éxécution de l'autre.
 
@@ -95,8 +102,9 @@ Le choix du \textit{Transmission Control Protocol} \cite{TCP-IP} comme moyen de 
 
 \noindent La déconnexion du serveur par un client suit ce processus :
 \begin{enumerate}
-    \item Le client signale sa déconnexion au serveur (comment ? TODO), qui, après l'étape 2), va fermer ses sockets.
-    \item Attente de la fin des opérations en cours
+
+    \item Attente de la fin des opérations en cours.
+    \item Le client ferme ses sockets.
     \item Le thread "non-noyau", servant à la réception des messages, est fermé en premier
     \item Le thread principal est terminé à son tour, achevant le processus de déconnexion.
 \end{enumerate}
@@ -140,10 +148,10 @@ La première itération du programme visait à utiliser \texttt{boost::asio} \ci
 \noindent Malgré l'abandon de cette solution, l’utilisation de \texttt{boost::asio} nous a tout de même permis d'approfondir une multitudes de concepts, tels que le fonctionnement et l'optimisation de grand serveurs, les mécanismes asynchrones, \texttt{epoll}.
 
 
-\subsection{Attente active pour les FIFOs côté client (retirer cette section?)}
-\noindent On l'a vu en section 3.3, tout client est séparé en deux threads dont l'un gère une FIFO pour les messages entrants et l'autre les messages sortants. Cependant, l'implémentation actuelle de ce projet fait que le contenu des FIFOs est vérifié en permanence tant que le client est connecté \footnote{On pourrait en quelque sorte parler d'\textit{attente active} de la part du client. \cite{Attente Active} }
+\subsection{Utilisation des FIFOs}
+\noindent On l'a vu en section 3.1 et 3.2, tout client est séparé en deux threads dont l'un gère un buffer pour les messages entrants et l'autre un buffer pour les messages sortants. Cependant, l'implémentation actuelle de ce projet fait que le nombre de messages en attente d'être envoyés ou reçus sont limités par la taille de ces buffers. Pour se débarasser de cette limitation, on peut avoir recours aux std::queue/FIFO.
 
-\noindent Par manque de temps, un système plus propre n'a pas pu être mis en place, mais on peut en esquisser le fonctionnement théorique (qui aurait certainement pu, comme pour \texttt{epoll}, être implémenté en quelques jours) :
+\noindent On peut en esquisser le fonctionnement théorique (qui aurait certainement pu, comme pour \texttt{epoll}, être implémenté en quelques jours) :
 \begin{enumerate}
     \item Initialement, la FIFO des messages entrants serait vide. Dès qu'un message serait envoyé au client, celui-ci serait notifié et pourrait \texttt{pop()} un élément de la FIFO pour le traiter.
     \item Chaque nouveau message entrant correspondrait à une nouvelle "notification" pour le client, à une nouvelle tâche à faire : on aurait donc facilement pu avoir un "compteur de tâches à faire" qui indiquerait combien de fois le client devrait extraire un message de la FIFO. Ce compteur serait naturellement décrémenté dès que le client aurait fini une tâche.
