@@ -7,14 +7,15 @@
  a4paper,
  left=25mm,
  right=25mm,
- top=30mm,
- bottom=30mm
+ top=22mm,
+ bottom=25mm
  }
 
 \usepackage[french]{babel}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage{hyperref}
+\usepackage{xurl}
 \usepackage{wrapfig}
 
 \title{Rapport de projet : Chat201 – édition thread \& réseau}
@@ -35,7 +36,7 @@
 \noindent Ce rapport décrit globalement la conception du second projet dans le cadre du cours de Systèmes d'Exploitation
 (INFO-F201). Il présente les choix de conception qui ont guidé notre développement, et les difficultés qui ont pu survenir durant celui-ci. Pour voir de façon précise les changements ayant eu lieu tout au long du projet et la contribution de chacun, veuillez consulter \href{https://github.com/Daniel-Dfg/OS_Projet_2}{le repository GitHub de notre projet}.
 
-\section{Choix du langage :pourquoi C++ plutôt que C ?}
+\section{Choix du langage : pourquoi C++ plutôt que C ?}
 
 \subsection*{Des outils qui facilitent le développement en général}
 \noindent Une raison fondamentale qui a guidé cette décision est que C++ possède des fonctionnalités absentes en C tels que les références, les chaînes de caractères (ou \textit{strings}, qu'on a souvent subsitués aux \texttt{char*[]}) ou encore les classes.
@@ -63,7 +64,7 @@ De plus, les deux langages étant connus pour leur rapidité d'exécution, la pe
 \noindent La structure d'un programme client-serveur tel que celui présenté ici peut être visualisée très simplement sous la forme d'un Graphe Étoile \cite{Graphe Étoile}, avec le serveur au centre et les clients aux extrémités de chaque branche.
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=0.2\linewidth]{etoile.png}
+    \includegraphics[width=0.25\linewidth]{etoile.png}
     \caption{\textit{Graphe Étoile typique.}}
 \end{figure}
 
@@ -74,21 +75,21 @@ De plus, les deux langages étant connus pour leur rapidité d'exécution, la pe
 \subsection{Choix d'implémentation communs aux clients et au serveur}
 
 \subsubsection{Du protocole de communication}
-Le choix du \textit{Transmission Control Protocol} \cite{TCP-IP} comme moyen de communication client-serveur n'était pas un "choix" à proprement parler, mais il convient de mentionner que sa mise en place a été faite en suivant globalement la méthode décrite dans la séance de Travaux Pratiques associée \cite{TP_OS}. Pour ce qui est de protocole de réseau, ce sont les adresses de famille IPv4 qui sont utilisés.
+L'utilisation du \textit{Transmission Control Protocol} \cite{TCP-IP} comme moyen de communication client-serveur n'était pas un "choix" à proprement parler, mais il convient de mentionner que sa mise en place a été faite en suivant globalement la méthode décrite dans la séance de Travaux Pratiques associée \cite{TP_OS}. Pour ce qui est de protocole de réseau, ce sont les adresses de famille IPv4 qui sont utilisés.
 
 \subsubsection{De la méthode d'envoi des messages}
 \noindent Il a été décidé d'abstraire l'échange d'informations entre les clients et le serveur principalement par une classe \texttt{Message}. Un point très important qui découle de ce choix d'implémentation est qu'on a utilisé des \texttt{std::string} \cite{std::string} pour garantir une gestion dynamique de la mémoire et simplifier les opérations de manipulation des chaînes de caractère.
 
 \subsection{Conception des clients}
 
-\subsubsection{Capacités d'envoie et de réception}
+\subsubsection{Capacités d'envoi et de réception : adaptation à la taille des données transmises}
 
- Tout client possède un socket pour communiquer avec le server. Ces sockets possèdent 2 buffers par défaut dont l'un pour l'écriture et l'autre pour la lecture. La taille d'un buffer change d'un OS ou d'une machine à l'autre. Cependant ces tailles vont des dizaines à des centaines de Ko. Étant donné que chaque message a au plus 1 Ko et que chaque message est traité très rapidement dés l'envoi ou la réception, ces tailles sont largement suffisants dans le cadre de ce projet. Si toutefois on arrivait à une situation de buffer plein, alors le server se chargera de déconnecter l'utilisateur en question.
+ Tout client possède un socket pour communiquer avec le serveur. Ces sockets possèdent 2 buffers par défaut dont l'un pour l'écriture et l'autre pour la lecture. La taille d'un buffer change d'un OS ou d'une machine à l'autre. Cependant ces tailles vont des dizaines à des centaines de Ko. Étant donné que chaque message a au plus 1 Ko et que chaque message est traité très rapidement dés l'envoi ou la réception, ces tailles sont largement suffisants dans le cadre de ce projet. Si toutefois on arrivait à une situation de buffer plein, alors le serveur se chargera de déconnecter l'utilisateur en question.
 
 Il serait utile de rajouter que la taille par défaut donnée par la machine pour ces buffers de socket IPv4 peut être augmenté. On peut multiplier jusqu'à des dizaines de fois ceux-ci en choisissant la valeur maximale. Nous ne l'avons pas fait dans le cadre de ce projet que les valeurs offertes par défaut sont suffisantes.
 
 
-\subsubsection{Deux threads, un socket par client}
+\subsubsection{Gestion de l'aspect temporel de la communication via deux threads, un socket par client}
  La section précédente se focalise sur l'aspect taille du problème. Pour ce qui est de l'aspect temporel dans la gestion de ces 2 buffers, nous utilisons deux threads. Le thread noyau qui est créé en même temps que le processus est dédié à l'envoi de messages (qui doit donc en quelque sorte remplir le buffer des messages à envoyer, puis la vider progressivement) tandis que le second thread créé manuellement est dédié à la réception des messages (qui doit donc vider le buffer et afficher le contenu de messages entrants). Ainsi les deux buffers ne sont pas limités par l'éxécution de l'autre.
 
 
@@ -141,17 +142,18 @@ En cas d'erreur, un exit est provoqué avec le code d'erreur correspondant. Ceci
 Cependant, l'implémentation d'\texttt{epoll} aurait tout à fait pu être fait en quelques jours supplémentaires.
 
 \subsection{\texttt{boost::asio} comme alternative à \texttt{poll}}
-La première itération du programme visait à utiliser \texttt{boost::asio} \cite{boost}, une bibliothèque puissante basée sur \texttt{epoll} qui fournissait une automatisation de certains traitements (comme la mise en place d'un \textit{thread pool} côté serveur par exemple).
+\noindent La première itération du programme visait à utiliser \texttt{boost::asio} \cite{boost}, une bibliothèque puissante basée sur \texttt{epoll} qui fournissait une automatisation de certains traitements (comme la mise en place d'un \textit{thread pool} côté serveur par exemple).
 
 \noindent Cependant, nous avons constaté que son utilisation représentait une solution qui dépasse le cadre de ce cours pour un serveur ayant du être réalisé en 2 semaines, ayant du gérer un nombre restreint de connexions simultanées (1000), et traiter des messages contenant uniquement du texte brut. De plus, bien que très instructif, nous n’étions pas assez à l’aise avec tout les aspects et la richesse de cette bibliothèque dans le temps imparti. Cette situation nous a permis d'explorer d’autres solutions, comme \texttt{poll}, qui étaient plus adaptées dans le cadre de ce cours.
 
 \noindent Malgré l'abandon de cette solution, l’utilisation de \texttt{boost::asio} nous a tout de même permis d'approfondir une multitudes de concepts, tels que le fonctionnement et l'optimisation de grand serveurs, les mécanismes asynchrones, \texttt{epoll}.
 
 
-\subsection{Utilisation des FIFOs}
-\noindent On l'a vu en section 3.1 et 3.2, tout client est séparé en deux threads dont l'un gère un buffer pour les messages entrants et l'autre un buffer pour les messages sortants. Cependant, l'implémentation actuelle de ce projet fait que le nombre de messages en attente d'être envoyés ou reçus sont limités par la taille de ces buffers. Pour se débarasser de cette limitation, on peut avoir recours aux std::queue/FIFO.
+\subsection{Utilisation théorique des FIFOs}
+\noindent On l'a vu en sections 3.1 et 3.2, tout client est séparé en deux \textit{threads} dont l'un gère un buffer pour les messages entrants et l'autre un buffer pour les messages sortants. Cependant, l'implémentation actuelle de ce projet fait que le nombre de messages en attente d'être envoyés ou reçus sont limités par la taille de ces buffers. Pour se débarasser de cette limitation, on peut avoir recours aux \texttt{std::queue} ou FIFOs \cite{std::queue}.
 
-\noindent On peut en esquisser le fonctionnement théorique (qui aurait certainement pu, comme pour \texttt{epoll}, être implémenté en quelques jours) :
+
+\noindent On peut esquisser le fonctionnement théorique d'un tel système (qui aurait certainement pu, comme pour \texttt{epoll}, être implémenté en quelques jours) :
 \begin{enumerate}
     \item Initialement, la FIFO des messages entrants serait vide. Dès qu'un message serait envoyé au client, celui-ci serait notifié et pourrait \texttt{pop()} un élément de la FIFO pour le traiter.
     \item Chaque nouveau message entrant correspondrait à une nouvelle "notification" pour le client, à une nouvelle tâche à faire : on aurait donc facilement pu avoir un "compteur de tâches à faire" qui indiquerait combien de fois le client devrait extraire un message de la FIFO. Ce compteur serait naturellement décrémenté dès que le client aurait fini une tâche.
@@ -185,7 +187,7 @@ Lors de l'arrêt du programme, le signal manager prend en compte l'absence (\tex
  On en a déjà discuté dans ce rapport, mais tout client possède deux threads distincts, un pour l'envoi et un autre pour la réception de messages. Ce dernier possède un \textit{masque} qui fait qu'il ignore tous les signaux qui lui parviennent. Ce choix a été fait pour centraliser la gestion des signaux côté client dans le thread principal.
 
 \subsubsection*{Communication de signaux entre threads}
-Le masquage des signaux était une solution à la répartition des gestions des signaux par les threads. Mais il est également possible d'envoyer des signaux entre les threads. Ceci est possible car chaque thread possède un ID. Si le second thread qui s'occupe de la lecture via le server reçoit un signal qui indique que le serveur nous a déconnecté alors il est possible de prévenir le thread noyau pour qu'il s'occupe du reste via un pthread\_kill().
+Le masquage des signaux était une solution à la répartition des gestions des signaux par les threads. Mais il est également possible d'envoyer des signaux entre les threads. Ceci est possible car chaque thread possède un ID. Si le second thread qui s'occupe de la lecture via le serveur reçoit un signal qui indique que le serveur nous a déconnecté alors il est possible de prévenir le thread noyau pour qu'il s'occupe du reste via un \texttt{pthread\_kill()} \cite{std::thread}.
 
 
 
@@ -218,6 +220,7 @@ Malgré toutes les précautions prises pour avoir un programme \textit{safe}, il
 
 Ce cas d'erreur \textit{externe, indéfinie} est également géré par notre programme (du moins en partie) : si un problème de ce type est détecté, le client problématique est déconnecté et si un autre client essayait de lui envoyer des messages (qui n'arrivaient pas à destination à cause de ces fameux problèmes \textit{indéfinis}, justement), il est notifié du problème.
 
+\pagenumbering{gobble}
 \begin{thebibliography}{999}
     \bibitem{std::queue}
     \texttt{std::queue} - cppreference (dernière modification : 2024, 2 août)
