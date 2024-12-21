@@ -1,46 +1,24 @@
-TOPDIR  := ./
+CXX = g++
+FLAGS = -std=gnu++17 -Wall -Wextra -O2 -Wpedantic
 
-SRCDIR_CLIENT  := $(TOPDIR)src/chat/
-OBJDIR_CLIENT  := $(TOPDIR)obj/chat/
-BINDIR_CLIENT  := $(TOPDIR)
-NAME_CLIENT    := chat
-EXE_CLIENT     := $(BINDIR)$(NAME_CLIENT)
+SRC_DIR = src
+CLIENT_DIR = $(SRC_DIR)/client
+SERVER_DIR = $(SRC_DIR)/serveur
 
-SRCDIR_SERVEUR  := $(TOPDIR)src/serveur/
-OBJDIR_SERVEUR  := $(TOPDIR)obj/serveur/
-BINDIR_SERVEUR  := $(TOPDIR)
-NAME_SERVEUR    := serveur-chat
-EXE_SERVEUR     := $(BINDIR)$(NAME_SERVEUR)
+CLIENT_SRCS = $(wildcard $(CLIENT_DIR)/*.cpp)
+SERVER_SRCS = $(wildcard $(SERVER_DIR)/*.cpp)
 
-SFILES  := c
-OFILES  := o
-CC      := gcc
-CFLAGS  := -Wall -Wextra -O3 -std=gnu2x -pedantic -march=native -Wnull-dereference -Winline -Wconversion -pthread -flto -pipe -g -fsanitize=address,undefined
-LIBS    := -fsanitize=address,undefined
+CLIENT_TARGET = chat
+SERVER_TARGET = serveur-chat
+all: $(CLIENT_TARGET) $(SERVER_TARGET)
 
-SOURCES_CLIENT := $(shell find $(SRCDIR_CLIENT) -name "*.$(SFILES)")
-OBJECTS_CLIENT := $(patsubst $(SRCDIR_CLIENT)%.$(SFILES), $(OBJDIR_CLIENT)%.$(OFILES), $(SOURCES_CLIENT))
+$(CLIENT_TARGET):
+	$(CXX) $(FLAGS) $(CLIENT_SRCS) -o $(CLIENT_TARGET)
 
-SOURCES_SERVEUR := $(shell find $(SRCDIR_SERVEUR) -name "*.$(SFILES)")
-OBJECTS_SERVEUR := $(patsubst $(SRCDIR_SERVEUR)%.$(SFILES), $(OBJDIR_SERVEUR)%.$(OFILES), $(SOURCES_SERVEUR))
-
-ALLFILES := $(SOURCES_CLIENT) $(SOURCES_SERVEUR)
-
-.PHONY: all clean
-
-all: $(EXE_CLIENT) $(EXE_SERVEUR)
-
-$(EXE_CLIENT): $(OBJECTS_CLIENT)
-	$(CC) $^ -o $@ $(LIBS)
-
-$(EXE_SERVEUR): $(OBJECTS_SERVEUR)
-	$(CC) $^ -o $@ $(LIBS)
-
-$(OBJDIR_CLIENT)%$(OFILES): $(SRCDIR_CLIENT)%$(SFILES)
-	$(CC) $(CFLAGS) $< -c -o $@
-
-$(OBJDIR_SERVEUR)%$(OFILES): $(SRCDIR_SERVEUR)%$(SFILES)
-	$(CC) $(CFLAGS) $< -c -o $@
+$(SERVER_TARGET):
+	$(CXX) $(FLAGS) $(SERVER_SRCS) -o $(SERVER_TARGET)
 
 clean:
-	@rm -f $(OBJDIR_CLIENT) $(OBJDIR_SERVEUR) $(EXE_CLIENT) $(EXE_SERVEUR)
+	rm -f $(CLIENT_TARGET) $(SERVER_TARGET)
+
+.PHONY: all clean

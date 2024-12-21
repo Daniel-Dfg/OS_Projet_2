@@ -45,9 +45,9 @@ void Server::init(int port){
     );
 
     pollfd server_pollfd = {
-        .fd = server_fd,
-        .events = POLLIN,
-        .revents = 0
+        server_pollfd.fd = server_fd,
+        server_pollfd.events = POLLIN,
+        server_pollfd.revents = 0
     };
     poll_fds.push_back(server_pollfd); // Ajoute le socket principal à la liste des sockets surveillés
 }
@@ -75,16 +75,16 @@ void Server::handleNewConnection() {
     if (name_to_fd.find(client_name) != name_to_fd.end()) {
         std::cerr << "Pseudo déjà utilisé : " << client_name << ". Déconnexion du nouveau client.\n";
         string error_message = "[SYTEM] Pseudo déjà utilisé. Connetez vous avec un autre pseudo.\n";
-        write(client_fd, error_message.c_str(), error_message.size());
+        check_return_value(write(client_fd, error_message.c_str(), error_message.size()));
         close(client_fd); // Ferme la connexion pour le client ayant le pseudo en double
         return;
     }
 
     // Permet de surveiller si il y a un événment disponible sur la socket du client, push dans le pool des truc à surveillé
     pollfd client_pollfd = {
-        .fd = client_fd,
-        .events = POLLIN,
-        .revents = 0
+        client_pollfd.fd = client_fd,
+        client_pollfd.events = POLLIN,
+        client_pollfd.revents = 0
     };
 
     poll_fds.push_back(client_pollfd); // ajoute la socket client dans la liste à surveillé
@@ -143,7 +143,7 @@ void Server::handleClientMessage(int client_fd) {
 
     // Verification Si le destinataire est connecté
     if (name_to_fd.find(receiver) == name_to_fd.end()) {
-        write(client_fd, receiver.c_str(), sizeof(receiver)); // a etudier
+        check_return_value(write(client_fd, receiver.c_str(), sizeof(receiver)));
         return;
     }
 
@@ -156,7 +156,7 @@ void Server::handleClientMessage(int client_fd) {
 // Gère la déconnexion d'un client
 void Server::handleDisconnection(int client_fd) {
     const string name = fd_to_name[client_fd];
-    // Supprime les pseudo du mapp
+    // Supprime les pseudo du map
     name_to_fd.erase(name);
     fd_to_name.erase(client_fd);
 
