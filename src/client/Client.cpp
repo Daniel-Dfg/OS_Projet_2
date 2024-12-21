@@ -79,7 +79,6 @@ void Client::SendMessage() {
     std::string onlyText = message.substr(space + 1);
 
     if (receiver.empty() || onlyText.empty()) {
-      std::cerr << "Format message invalide\n";
       continue;
     }
 

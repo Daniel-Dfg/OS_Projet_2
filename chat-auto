@@ -6,6 +6,8 @@ set -e  # Arrête le script dès qu'il y'a une erreur
 # Fonction pour traiter l'entrée et gérer le CTRL+D
 input_chat() {
   receiver=""
+  sleep 0.1 # Pour détecter si ./chat a provoqué une erreur
+  echo "" # Fausse message pour tester l'entrée de ./chat
   while [[ -z "$receiver" ]]; do # Tant que le nom donné est vide
       echo -n "Qui est votre destinataire ? : " >&2
       read -r receiver
@@ -25,6 +27,7 @@ input_chat() {
       fi
   done
   }
+
 
 # Fonction principale
 main() {
