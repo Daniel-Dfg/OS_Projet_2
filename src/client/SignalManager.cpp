@@ -4,46 +4,41 @@
 bool SignalManager::clientConnected=false;
 bool SignalManager::showMemory=false;
 
-// Initialise la gestion des signaux pour le programme
 void SignalManager::initSignalHandling(bool manuel) {
-    struct sigaction sa{};  // Structure pour configurer les actions des signaux
+    struct sigaction actions_signaux{};  // Structure pour configurer les actions des signaux
 
     // Définit le gestionnaire de signaux en fonction du mode
-    if (!manuel) sa.sa_handler = SignalManager::signalHandler;  // Mode normal
-    else sa.sa_handler = SignalManager::signalHandlerManuel;  // Mode manuel
+    manuel ?
+        actions_signaux.sa_handler = SignalManager::signalHandlerManuel :
+        actions_signaux.sa_handler = SignalManager::signalHandler;
 
-    sigemptyset(&sa.sa_mask);  // Vide le masque de signaux (aucun bloqué)
-    sa.sa_flags = 0;           // Aucun drapeau supplémentaire
+    sigemptyset(&actions_signaux.sa_mask);  // aucun signal bloqué
+    actions_signaux.sa_flags = 0;           // Aucun drapeau supplémentaire
 
     // Associe les signaux aux gestionnaires
-    sigaction(SIGINT, &sa, nullptr);
-    sigaction(SIGPIPE, &sa, nullptr);// Gère l'interruption (Ctrl+C)
-    sigaction(SIGUSR1, &sa, nullptr);  // Signal personalisé qui indique la fin du programme
-    sigaction(SIGHUP, &sa, nullptr);  // Si l'on quitte le terminal
+    sigaction(SIGINT, &actions_signaux, nullptr); // Gère l'interruption (Ctrl+C)
+    sigaction(SIGPIPE, &actions_signaux, nullptr);
+    sigaction(SIGUSR1, &actions_signaux, nullptr);  // Signal personalisé qui indique la fin du programme
+    sigaction(SIGHUP, &actions_signaux, nullptr);  // Si l'on quitte le terminal
 }
 
-// Gestionnaire de signaux pour le mode normal
 void SignalManager::signalHandler(int signalSent) {
     if (signalSent == SIGINT || signalSent == SIGPIPE) {
         if (!clientConnected) {
-            /*Tant que la connexion (fonction connect()) n’a pas été établie, le signal SIGINT doit
-            terminer proprement chat (et donc à la fois le processus d’origine et le second) avec le
-            code de retour 4 */
-            exit(CODE_RETOUR_ARRET_SIGINT);
+            exit(ARRET_SIGINT);
         } else {
             clientConnected= false;
-            exit(CODE_RETOUR_NORMAL);
+            exit(NORMAL);
         }
     }
 }
 
-// Gestionnaire de signaux pour le mode manuel
 void SignalManager::signalHandlerManuel(int signalSent) {
     if (signalSent == SIGINT) {
         if (clientConnected) {
             showMemory = true;
         } else {
-            exit(CODE_RETOUR_ARRET_SIGINT);
+            exit(ARRET_SIGINT);
         }
     }
     else if (signalSent == SIGPIPE){
