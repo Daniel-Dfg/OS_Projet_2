@@ -81,13 +81,6 @@ Le choix du \textit{Transmission Control Protocol} \cite{TCP-IP} comme moyen de 
 
 \subsection{Conception des clients}
 
-\subsubsection{Capacités d'envoie et de réception}
- Tout client possède un socket pour communiquer avec le server. Ces sockets possèdent 2 buffers par défaut dont l'un pour l'écriture et l'autre pour la lecture. La taille d'un buffer change d'un OS ou d'une machine à l'autre. Cependant ces tailles vont des dizaines à des centaines de Ko. Étant donné que chaque message a au plus 1 Ko et que chaque message est traité très rapidement dés l'envoi ou la réception, ces tailles sont largement suffisants dans le cadre de ce projet. Si toutefois on arrivait à une situation de buffer plein, alors le server se chargera de déconnecter l'utilisateur en question.
-
-Il serait utile de rajouter que la taille par défaut donnée par la machine pour ces buffers de socket IPv4 peut être augmenté. On peut multiplier jusqu'à des dizaines de fois ceux-ci en choisissant la valeur maximale. Nous ne l'avons pas fait dans le cadre de ce projet que les valeurs offertes par défaut sont suffisantes.
-
-
-
 \subsubsection{Deux threads, un socket par client}
  La section précédente se focalise sur l'aspect taille du problème. Pour ce qui est de l'aspect temporel dans la gestion de ces 2 buffers, nous utilisons deux threads. Le thread noyau qui est créé en même temps que le processus est dédié à l'envoi de messages (qui doit donc en quelque sorte remplir le buffer des messages à envoyer, puis la vider progressivement) tandis que le second thread créé manuellement est dédié à la réception des messages (qui doit donc vider le buffer et afficher le contenu de messages entrants). Ainsi les deux buffers ne sont pas limités par l'éxécution de l'autre.
 
@@ -97,25 +90,21 @@ Il serait utile de rajouter que la taille par défaut donnée par la machine pou
 
 
 \subsubsection{Gestion de la (dé)connexion au serveur}
-\noindent Tout client doit suivre le protocole TCP \cite{TCP-IP} pour initialiser sa connexion et doit s'identifier auprès du serveur. Si le client n'arrive pas à se connecter au server pour une certaine raison, il réenvoie des demandes de connexion périodiquement.
-(incomplet)
+\noindent Tout client doit suivre le protocole TCP \cite{TCP-IP} pour initialiser sa connexion et doit s'identifier auprès du serveur. Si le client n'arrive pas à se connecter au serveur, il ré-envoie des demandes de connexion périodiquement.
 
 
- Gestion de la déconnexion (quel thread tue l'autre, comment on se déconnecte) TODO :
+\noindent La déconnexion du serveur par un client suit ce processus :
+\begin{enumerate}
+    \item Le client signale sa déconnexion au serveur (comment ? TODO), qui, après l'étape 2), va fermer ses sockets.
+    \item Attente de la fin des opérations en cours
+    \item Le thread "non-noyau", servant à la réception des messages, est fermé en premier
+    \item Le thread principal est terminé à son tour, achevant le processus de déconnexion.
+\end{enumerate}
 
-1. Signalement de déconnexion via un attribut et fermeture des sockets
-
-2. Attente de la fin des opérations en cours
-
-3. Terminaison du thread non-noyau
-
-4. Terminaison du processus
 
 En cas d'erreur, un exit est provoqué avec le code d'erreur correspondant. Ceci ne pose pas de problème car il n'y a pas de ressources à gérer dynamiquement. Les données de l'instance sont supprimés, les sockets sont fermés par le système, les threads sont terminés automatiquement.
 
-\subsection{Conception du serveur}
-
-\subsubsection{De l'utilisation de \texttt{poll}}
+\subsection{Conception du serveur : De l'utilisation de \texttt{poll}}
 \noindent \texttt{poll} \cite{poll} est l'outil qui a été choisi côté serveur pour gérer les connexions et envoi de messages par les clients. Il fonctionne ainsi \cite{poll} :
 \begin{enumerate}
     \item Initialiser un \texttt{std::vector} de \texttt{pollfd} (descripteurs de fichier) pour gérer les communications. Chaque entrée dans ce vecteur correspond à une socket connecté au serveur, y compris le socket principal qui gère les nouvelles connexions.
@@ -143,8 +132,8 @@ En cas d'erreur, un exit est provoqué avec le code d'erreur correspondant. Ceci
 
 Cependant, l'implémentation d'\texttt{epoll} aurait tout à fait pu être fait en quelques jours supplémentaires.
 
-\subsection{\texttt{boost::asio} comme alternative à \texttt{poll} (réf. nécessaire)}
-La première itération du programme visait à utiliser \texttt{boost::asio}, une bibliothèque puissante basée sur \texttt{epoll} qui fournissait une automatisation de certains traitements (comme la mise en place d'un \textit{thread pool} côté serveur par exemple).
+\subsection{\texttt{boost::asio} comme alternative à \texttt{poll}}
+La première itération du programme visait à utiliser \texttt{boost::asio} \cite{boost}, une bibliothèque puissante basée sur \texttt{epoll} qui fournissait une automatisation de certains traitements (comme la mise en place d'un \textit{thread pool} côté serveur par exemple).
 
 \noindent Cependant, nous avons constaté que son utilisation représentait une solution qui dépasse le cadre de ce cours pour un serveur ayant du être réalisé en 2 semaines, ayant du gérer un nombre restreint de connexions simultanées (1000), et traiter des messages contenant uniquement du texte brut. De plus, bien que très instructif, nous n’étions pas assez à l’aise avec tout les aspects et la richesse de cette bibliothèque dans le temps imparti. Cette situation nous a permis d'explorer d’autres solutions, comme \texttt{poll}, qui étaient plus adaptées dans le cadre de ce cours.
 
@@ -156,11 +145,11 @@ La première itération du programme visait à utiliser \texttt{boost::asio}, un
 
 \noindent Par manque de temps, un système plus propre n'a pas pu être mis en place, mais on peut en esquisser le fonctionnement théorique (qui aurait certainement pu, comme pour \texttt{epoll}, être implémenté en quelques jours) :
 \begin{enumerate}
-    \item Initialement, la FIFO des messages entrants est vide. Dès qu'un message est envoyé au client, celui-ci est notifié et \texttt{pop()} un élément de la FIFO pour le traiter.
-    \item Chaque nouveau message entrant correspond à une nouvelle "notification" pour le client, à une nouvelle tâche à faire : on peut donc facilement avoir un "compteur de tâches à faire" qui indique combien de fois le client doit extraire un message de la FIFO. Ce compteur serait naturellement décrémenté dès que le client aurait fini une tâche.
+    \item Initialement, la FIFO des messages entrants serait vide. Dès qu'un message serait envoyé au client, celui-ci serait notifié et pourrait \texttt{pop()} un élément de la FIFO pour le traiter.
+    \item Chaque nouveau message entrant correspondrait à une nouvelle "notification" pour le client, à une nouvelle tâche à faire : on aurait donc facilement pu avoir un "compteur de tâches à faire" qui indiquerait combien de fois le client devrait extraire un message de la FIFO. Ce compteur serait naturellement décrémenté dès que le client aurait fini une tâche.
 
-    Par exemple, si un client reçoit 3 messages en même temps, il est censé être notifié 3 fois et donc \texttt{pop()} le premier élément de la FIFO 3 fois (ce qui vide exactement la FIFO, en principe).
-    \item Lorsque la FIFO est vide, le client a donc en théorie réalisé toutes les tâches qui lui étaient assignées et n'a par conséquent pas besoin de vérifier son contenu en permanence.
+    Par exemple, si un client recevait 3 messages en même temps, il serait censé être notifié 3 fois et donc \texttt{pop()} le premier élément de la FIFO 3 fois (ce qui viderait exactement la FIFO, en principe).
+    \item Lorsque la FIFO serait vide, le client aurait donc en théorie réalisé toutes les tâches qui lui étaient assignées et n'aurait par conséquent pas besoin de vérifier son contenu en permanence.
 \end{enumerate}
 
 \section{Difficultés rencontrées et solutions trouvées}
@@ -181,7 +170,7 @@ Il a donc été décidé de centraliser la gestion des signaux dans une classe d
 
 
 
-\subsubsection{Différence entre le mode normal et le mode \texttt{manuel}}
+\subsubsection*{Différence entre le mode normal et le mode \texttt{manuel}}
 Lors de l'arrêt du programme, le signal manager prend en compte l'absence (\texttt{SignalManager::signalHandler}) ou la présence du mode \texttt{manuel} (\texttt{SignalManager::signalHandlerManuel}).
 
 \subsubsection*{Masquage des signaux pour le thread récepteur côté client}
@@ -213,7 +202,7 @@ Dans le cadre de ce projet, diverses situations de deadlocks/d'interblocages ont
 
 \subsubsection{Gestion des tailles limites}
 
-Pour garantir l'intégrité du contenu partagé par les clients, nous avons imposé des limites strictes sur la taille des pseudos (maximum de 30 octets) et des messages (maximum de 1024 octets) à la fois coté client et coté serveur. En cas de dépassement de la taille du message, et que ce message parviens coté serveur malgré la protection coté client, le message est rejeté et le serveur déconnecte le client.
+Pour garantir l'intégrité du contenu partagé par les clients, des limites strictes sur la taille des pseudos (maximum de 30 octets) et des messages (maximum de 1024 octets) ont été imposées à la fois coté client et coté serveur. En cas de dépassement de la taille du message, et que ce message parviens coté serveur malgré la protection coté client, le message est rejeté et le serveur déconnecte le client.
 
 \subsubsection{Fiabilité de la transmission des messages}
 
@@ -290,6 +279,12 @@ Ce cas d'erreur \textit{externe, indéfinie} est également géré par notre pro
     StackOverflow - \textit{What is the purpose of epoll's edge triggered option?} (dernière modification : 2022, 25 septembre).
 
     URL : \url{https://stackoverflow.com/questions/9162712/what-is-the-purpose-of-epolls-edge-triggered-option?rq=3}
+
+    \bibitem{boost}
+
+    KOHLHOFF C., \textit{Boost.Asio} (dernière modification : 2024)
+
+    URL : \url{https://www.boost.org/doc/libs/1_87_0/doc/html/boost_asio.html}
 
     \bibitem{Attente Active}
     Wikipedia : \textit{Busy Waiting} (dernière modification : 2024, 2 novembre).
