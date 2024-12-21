@@ -200,7 +200,7 @@ void Client::FormatAndSetNickName(std::string &nick) {
   if (modBot_)
     nick = "[" + std::string(nick) + "]";
   else
-    nick = "\x1B[4m[" + std::string(nick) + "]\x1B[0m";
+    nick = "[\x1B[4m" + std::string(nick) + "\x1B[0m]";
 }
 
 
