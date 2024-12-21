@@ -1,3 +1,0 @@
-Acceptation de plusieurs clients à la fois sur le serveur.
-
-Le client possède deux threads : un receveur, et un envoyeur.

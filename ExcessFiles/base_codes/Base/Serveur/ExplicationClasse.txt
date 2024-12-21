@@ -1,5 +1,0 @@
-    Serveur : Point central de gestion des connexions.
-    ClientSession : Gère les interactions pour un client (envoie, reçois des messages en combinaison avec les queues)
-    ClientManager : Maintient et gère toutes les sessions actives.
-    Message : Structure pour échanger les données. 
-    MessageQueue : Assure la gestion des messages entrants et sortants avec des queues (précision dans le MessageQueue.cpp)

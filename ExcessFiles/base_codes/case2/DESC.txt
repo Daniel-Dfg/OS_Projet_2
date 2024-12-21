@@ -1,5 +1,0 @@
-Lecture en continu de messages envoyés depuis le client, avec réponse instantanée du serveur.
-
-On reste sur une structure "1 client - 1 serveur" pour l'instant, une communication avec plusieurs clients sera tentée plus tard.
-
-Fortement inspiré de l'exerice 3 du TP associé.
