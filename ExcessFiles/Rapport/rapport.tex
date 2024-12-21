@@ -81,24 +81,19 @@ Le choix du \textit{Transmission Control Protocol} \cite{TCP-IP} comme moyen de 
 
 \subsection{Conception des clients}
 
-\subsubsection{Deux FIFOs (ou \textit{files}) à vider en permanence}
-\noindent Tout client possède deux \texttt{std::queue} \cite{std::queue} qu'il observe en permanence: une pour les messages qu'il envoie, et une pour ceux qu'il reçoit.
+\subsubsection{Capacités d'envoie et de réception}
+ Tout client possède un socket pour communiquer avec le server. Ces sockets possèdent 2 buffers par défaut dont l'un pour l'écriture et l'autre pour la lecture. La taille d'un buffer change d'un OS ou d'une machine à l'autre. Cependant ces tailles vont des dizaines à des centaines de Ko. Étant donné que chaque message a au plus 1 Ko et que chaque message est traité très rapidement dés l'envoi ou la réception, ces tailles sont largement suffisants dans le cadre de ce projet. Si toutefois on arrivait à une situation de buffer plein, alors le server se chargera de déconnecter l'utilisateur en question.
 
-\noindent Utiliser des \texttt{std::queue} n'ayant pas de taille limitée ainsi est une partie de la solution aux problèmes de synchronisation qui peuvent être rencontrés dans le cadre de ce projet. En effet, si un client reçoit plusieurs messages en même temps, les messages peuvent être \textit{push} à l'arrière de la FIFO servant et traités séquentiellement par le client qui la videra progressivement.
-
-
- \noindent Mais n'y a-t-il pas un risque que, si on envoie plusieurs messages simultanément à un même client, les deux messages risquent de corrompre la FIFO de réception du client (qui est un objet critique) en voulant s'insérer dedans en même temps ?
+Il serait utile de rajouter que la taille par défaut donnée par la machine pour ces buffers de socket IPv4 peut être augmenté. On peut multiplier jusqu'à des dizaines de fois ceux-ci en choisissant la valeur maximale. Nous ne l'avons pas fait dans le cadre de ce projet que les valeurs offertes par défaut sont suffisantes.
 
 
-\noindent En principe, oui, c'est un problème qui peut survenir si on ne prend pas de précaution contre lui. C'est pour cela qu'on a fait usage de \textit{mutex} (ou \textit{exclusions mutelles}) \cite{std::mutex} pour protéger la FIFO de réception côté client (éviter qu'elle reçoive plusieurs messages simultanément).
+
+\subsubsection{Deux threads, un socket par client}
+ La section précédente se focalise sur l'aspect taille du problème. Pour ce qui est de l'aspect temporel dans la gestion de ces 2 buffers, nous utilisons deux threads. Le thread noyau qui est créé en même temps que le processus est dédié à la réception des messages (qui doit donc vider le buffer et afficher le contenu de messages entrants) tandis que le second thread créé manuellement est dédié à l'envoi de messages (qui doit donc en quelque sorte remplir le buffer des messages à envoyer, puis la vider progressivement). Ainsi les deux buffers ne sont pas limités par l'éxécution de l'autre.
+
+ \noindent Cette division du processus client en deux threads est due à des contraintes évidentes de performance et autorise le client à envoyer et recevoir des messages simultanément (gestion asynchrone des communications).
 
 
-\subsubsection{Deux threads, deux FIFOs par client}
-\noindent Ce point fait écho à la discussion de la section précédente sur l'usage de FIFOs côté client.
-
-\noindent Il faut préciser que le processus côté client se divise en deux \textit{threads}: un dédié à la réception des messages (qui doit donc vider et afficher le contenu de la FIFO de messages entrants) et un autre dédié à l'envoi de messages (qui doit donc en quelque sorte remplir la FIFO des messages à envoyer, puis la vider progressivement).
-
-\noindent Cette division du processus client en deux threads est due à des contraintes évidentes de performance et autorise le client à envoyer et recevoir des messages simultanément (gestion asynchrone des communications).
 
 \subsubsection{Gestion de la (dé)connexion au serveur}
 \noindent Tout client doit suivre le protocole TCP \cite{TCP-IP} pour initialiser sa connexion et doit s'identifier auprès du serveur. Si le client n'arrive pas à se connecter au server pour une certaine raison, il réenvoie des demandes de connexion périodiquement.
@@ -155,7 +150,7 @@ La première itération du programme visait à utiliser \texttt{boost::asio}, un
 \noindent Malgré l'abandon de cette solution, l’utilisation de \texttt{boost::asio} nous a tout de même permis d'approfondir une multitudes de concepts, tels que le fonctionnement et l'optimisation de grand serveurs, les mécanismes asynchrones, \texttt{epoll}.
 
 
-\subsection{Attente active pour les FIFOs côté client}
+\subsection{Attente active pour les FIFOs côté client (retirer cette section?)}
 \noindent On l'a vu en section 3.3, tout client est séparé en deux threads dont l'un gère une FIFO pour les messages entrants et l'autre les messages sortants. Cependant, l'implémentation actuelle de ce projet fait que le contenu des FIFOs est vérifié en permanence tant que le client est connecté \footnote{On pourrait en quelque sorte parler d'\textit{attente active} de la part du client. \cite{Attente Active} }
 
 \noindent Par manque de temps, un système plus propre n'a pas pu être mis en place, mais on peut en esquisser le fonctionnement théorique (qui aurait certainement pu, comme pour \texttt{epoll}, être implémenté en quelques jours) :
