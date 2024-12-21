@@ -89,7 +89,8 @@ Il serait utile de rajouter que la taille par défaut donnée par la machine pou
 
 
 \subsubsection{Deux threads, un socket par client}
- La section précédente se focalise sur l'aspect taille du problème. Pour ce qui est de l'aspect temporel dans la gestion de ces 2 buffers, nous utilisons deux threads. Le thread noyau qui est créé en même temps que le processus est dédié à la réception des messages (qui doit donc vider le buffer et afficher le contenu de messages entrants) tandis que le second thread créé manuellement est dédié à l'envoi de messages (qui doit donc en quelque sorte remplir le buffer des messages à envoyer, puis la vider progressivement). Ainsi les deux buffers ne sont pas limités par l'éxécution de l'autre.
+ La section précédente se focalise sur l'aspect taille du problème. Pour ce qui est de l'aspect temporel dans la gestion de ces 2 buffers, nous utilisons deux threads. Le thread noyau qui est créé en même temps que le processus est dédié à l'envoi de messages (qui doit donc en quelque sorte remplir le buffer des messages à envoyer, puis la vider progressivement) tandis que le second thread créé manuellement est dédié à la réception des messages (qui doit donc vider le buffer et afficher le contenu de messages entrants). Ainsi les deux buffers ne sont pas limités par l'éxécution de l'autre.
+
 
  \noindent Cette division du processus client en deux threads est due à des contraintes évidentes de performance et autorise le client à envoyer et recevoir des messages simultanément (gestion asynchrone des communications).
 
@@ -117,15 +118,15 @@ En cas d'erreur, un exit est provoqué avec le code d'erreur correspondant. Ceci
 \subsubsection{De l'utilisation de \texttt{poll}}
 \noindent \texttt{poll} \cite{poll} est l'outil qui a été choisi côté serveur pour gérer les connexions et envoi de messages par les clients. Il fonctionne ainsi \cite{poll} :
 \begin{enumerate}
-    \item Initialiser un \texttt{std::vector} de \texttt{pollfd} (descripteurs de fichier) pour gérer les communications. Chaque entrée dans ce vecteur correspond à une socket connecté au serveur (ou  de le socket principal qui gère les nouvelles connexions) que l'on dois surveillée.
-    \item Pour chaque client qui se connecte au serveur, une nouvelle entrée  est ajoutée au \texttt{std::vector}. Symétriquement, lors d'une déconnexion, il faut parcourir ce vecteur pour localiser et supprimer l'entrée correspondante.
+    \item Initialiser un \texttt{std::vector} de \texttt{pollfd} (descripteurs de fichier) pour gérer les communications. Chaque entrée dans ce vecteur correspond à une socket connecté au serveur, y compris le socket principal qui gère les nouvelles connexions.
+    \item Pour chaque client qui se connecte au serveur, une nouvelle entrée  est ajoutée au \texttt{std::vector}. Symétriquement, ors d'une déconnexion, il faut parcourir ce vecteur pour localiser et supprimer l'entrée correspondante.
     \item \texttt{poll} est \textit{level-triggered}, ce qui signifie que tant qu'un descripteur de fichier est prêt à être traité, l'entrée correspondante dans le vecteur seras signalée. Le serveur est donc "notifié" tant que les données sont disponibles, \cite{LevelEdgeTrigger} \cite{PollTrigger} et il doit se charger de traiter explicitement les évenements signalés pour éviter que ces notifications ne persistent indéfiniment.\\ En pratique, il \textit{boucle} sur le vecteur pendant toute sa durée de vie.
     \item Lorsqu’un événement de lecture est détecté sur une entrée du vecteur, le serveur lis le message du client. Il traite ensuite ce message, vérifie sa validité (taille, format..), puis il recherche à qui le client expéditeur a voulu transmettre son message \footnote{En pratique, on recherche le nom du client récepteur dans un \texttt{std::unordered\_map} avec le nom du client comme clé et son \texttt{pollfd} comme valeur.} et, s'il existe, écrit dans le \texttt{pollfd} du client récepteur.
 
 
-    Si le destinataire spécifié du message ne fait référence à aucun client connecté, un message contenant uniquement le pseudo de l'utilisateur non connecté est renvoyé au client, qui affiche un message d'erreur.
+    Si le destinataire spécifié du message ne fait référence à aucun client connecté, un message d'erreur est renvoyé au client.
     Si le message à envoyer n'est pas dans le bon format, (au minimum 2 mot séparé d'un espace) le serveur ignore la requête.
-    Si le message à envoyer est plus grand que 1024 octets, le client n'est pas nécessairement déconnecté : l'énoncé du projet spécifiait que le client devait être déconnecté \textit{si le serveur \textbf{recevait} un message excédant 1024 octets}, mais notre implémentation client \textit{prévient} cette éventualité en n'envoyant tout simplement pas les messages trop massifs. À la place, le client est averti que son message est trop long. En guise de couche de sécurité supplémentaire, nous avons ajouté une vérification côté serveur. Ainsi, si un message trop long n'est pas intercepté par le client et parvient jusqu'au serveur, ce dernier déconnecte le client.
+    Si le message à envoyer est plus grand que 1024 octets, le client n'est pas déconnecté : l'énoncé du projet spécifiait que le client devait être déconnecté \textit{si le serveur \textbf{recevait} un message excédant 1024 octets}, mais notre implémentation \textit{prévient} cette éventualité en n'envoyant tout simplement pas les messages trop massifs. À la place, le client est averti que son message est trop long.
 \end{enumerate}
 
 
@@ -212,25 +213,20 @@ Dans le cadre de ce projet, diverses situations de deadlocks/d'interblocages ont
 
 \subsubsection{Gestion des tailles limites}
 
-Pour garantir l'intégrité du contenu partagé par les clients, nous avons imposé des limites strictes sur la taille des pseudos (maximum de 30 octets) et des messages (maximum de 1024 octets) à la fois coté client et coté serveur. En cas de dépassement de la taille du message, et que ce message parviens coté serveur malgré la protection coté client, le message est rejeté et le serveur déconnecte le client. 
-
-\subsubsection{Unicité des pseudonymes}
-
- Si un client tente de se connecter avec un pseudonyme déjà utilisé par un autre client connecté, le serveur refuse la connexion. Cette mesure est réalisable car notre client envoie automatiquement son pseudonyme dès sa connexion au serveur. Ainsi, celà permet de reduire les comportement imprévu, tels que des des erreurs dans la transmission des messages.
+Pour garantir l'intégrité du contenu partagé par les clients, nous avons imposé des limites strictes sur la taille des pseudos (maximum de 30 octets) et des messages (maximum de 1024 octets) à la fois coté client et coté serveur. En cas de dépassement de la taille du message, et que ce message parviens coté serveur malgré la protection coté client, le message est rejeté et le serveur déconnecte le client.
 
 \subsubsection{Fiabilité de la transmission des messages}
 
-Malgré toutes les précautions prises pour avoir un programme \textit{safe}, il est toujours possible qu'on rencontre des cas où le client rencontre des erreurs (à cause d'un matériel défectueux, par exemple). 
+Malgré toutes les précautions prises pour avoir un programme \textit{safe}, il est toujours possible qu'on rencontre des cas où le client rencontre des erreurs (à cause d'un matériel défectueux, par exemple).
 
 Ce cas d'erreur \textit{externe, indéfinie} est également géré par notre programme (du moins en partie) : si un problème de ce type est détecté, le client problématique est déconnecté et si un autre client essayait de lui envoyer des messages (qui n'arrivaient pas à destination à cause de ces fameux problèmes \textit{indéfinis}, justement), il est notifié du problème.
-
 
 \begin{thebibliography}{999}
     \bibitem{std::queue}
     \texttt{std::queue} - cppreference (dernière modification : 2024, 2 août)
 
     URL : \url{https://en.cppreference.com/w/cpp/container/queue}
-    
+
     \bibitem{pthread.h}
         pthreads(7) — Linux manual page (dernière modification : 2024, 15 juin).
 
@@ -243,12 +239,12 @@ Ce cas d'erreur \textit{externe, indéfinie} est également géré par notre pro
 
     \bibitem{StackOverflow-C}
         StackOverflow - \textit{Is there anything that can be done in C and not in C++ and the opposite way ? [closed]} (dernière modification : 2010, 9 décembre)
-        
+
     URL : \url{https://stackoverflow.com/questions/4403328/is-there-anything-that-can-be-done-in-c-and-not-in-c-and-the-opposite-way}
 
 	\bibitem{Graphe Étoile}
 		Wikipedia : \textit{Graphe étoile} (dernière modification : 2019, 21 janvier)
-        
+
         URL: \url{https://fr.wikipedia.org/wiki/Graphe_%C3%A9toile}
 
     \bibitem{TCP-IP}
@@ -259,7 +255,7 @@ Ce cas d'erreur \textit{externe, indéfinie} est également géré par notre pro
     \bibitem{TP_OS}
     GOOSENS J., MARKOWITCH O., cours de \textit{Systèmes d'Exploitation} (ULB), TP n°6 : Programmation réseau
 
-    \bibitem{std::string} 
+    \bibitem{std::string}
     C++ Programming Language : \texttt{std::string} (dernière modification : inconnu)
 
     URL : \url{https://cpp-lang.net/docs/std/containers/strings/string/}
@@ -301,8 +297,6 @@ Ce cas d'erreur \textit{externe, indéfinie} est également géré par notre pro
     URL : \url{https://en.wikipedia.org/wiki/Busy_waiting}
 \end{thebibliography}
 Toutes sources consultées pour la dernière fois le 21/12/24, 16h.
-    
+
 \end{document}
-
-
 
